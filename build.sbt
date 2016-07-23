@@ -2,18 +2,18 @@ import UnidocKeys._
 import ReleaseTransformations._
 
 lazy val buildSettings = List(
-	organization := "org.tpolecat",
-	licenses ++= List(
-		("MIT", url("http://opensource.org/licenses/MIT")),
-		("BSD New", url("http://opensource.org/licenses/BSD-3-Clause"))
-	),
-	scalaVersion := "2.11.8",
-	crossScalaVersions := List("2.10.6", scalaVersion.value),
+  organization := "org.tpolecat",
+  licenses ++= List(
+    ("MIT", url("http://opensource.org/licenses/MIT")),
+    ("BSD New", url("http://opensource.org/licenses/BSD-3-Clause"))
+  ),
+  scalaVersion := "2.11.8",
+  crossScalaVersions := List("2.10.6", scalaVersion.value),
   addCompilerPlugin("org.spire-math" % "kind-projector" % "0.8.0" cross CrossVersion.binary)
 )
 
 lazy val commonSettings = List(
-	scalacOptions ++= List(
+  scalacOptions ++= List(
     "-deprecation",
     "-encoding", "UTF-8",
     "-feature",
@@ -26,11 +26,11 @@ lazy val commonSettings = List(
     "-Yno-adapted-args",
     "-Ywarn-dead-code",
     "-Ywarn-value-discard"
-	),
-	scalacOptions in compile ++= List(
-		"-Yno-imports",
-		"-Ywarn-numeric-widen"
-	),
+  ),
+  scalacOptions in compile ++= List(
+    "-Yno-imports",
+    "-Ywarn-numeric-widen"
+  ),
   libraryDependencies ++= List(
     "org.scalacheck" %% "scalacheck" % "1.13.2" % "test"
   )
