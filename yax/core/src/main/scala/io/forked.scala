@@ -3,7 +3,6 @@ package io
 import java.util.concurrent.{ Future => JFuture, Executors, ExecutorService, TimeUnit, ScheduledExecutorService, ScheduledFuture }
 
 case class Forked[A](cancel: IO[Boolean], get: IO[A]) {
-
   def map[B](f: A => B): Forked[B] =
     Forked(cancel, get.map(f))
 
@@ -12,11 +11,9 @@ case class Forked[A](cancel: IO[Boolean], get: IO[A]) {
 
   def zip[B](b: Forked[B]): Forked[(A, B)] =
     Forked(cancel.flatMap(a => b.cancel.map(a && _)), get.flatMap(a => b.get.map(b => (a, b))))
-
 }
 
 object Forked {
-
   def fromFuture[A](f: JFuture[A]): Forked[A] =
     Forked(IO.primitive(f.cancel(true)), IO.primitive(f.get))
 
@@ -31,10 +28,10 @@ sealed trait SubmitIO {
 }
 
 object SubmitIO {
-  def fromExecutorService(e: ExecutorService) =
+  def fromExecutorService(e: ExecutorService): SubmitIO =
     new SubmitIO {
       def submit[A](io: IO[A]): IO[Forked[A]] =
-        IO.primitive(e.submit(io.unsafeRunnable)).map(Forked.fromFuture)
+        IO.primitive(e.submit(io.toCallable)).map(Forked.fromFuture)
       def shutdown: IO[Unit] =
         IO.primitive(e.shutdown)
     }
@@ -45,20 +42,17 @@ sealed trait ScheduleIO {
 }
 
 object ScheduleIO {
-
-  def fromScheduledExecutorService(e: ScheduledExecutorService) =
+  def fromScheduledExecutorService(e: ScheduledExecutorService): ScheduleIO =
     new ScheduleIO {
       def schedule[A](io: IO[A], t: Long, tu: TimeUnit): IO[Forked[A]] =
-        IO.primitive(e.schedule(io.unsafeRunnable, t, tu)).map { f =>
+        IO.primitive(e.schedule(io.toCallable, t, tu)).map { f =>
           Forked.fromFuture(f)
         }
     }
-
 }
 
 object ExecutorIO {
-
-  def scheduledThreadPool(i: Int) =
+  def scheduledThreadPool(i: Int): IO[ScheduleIO] =
     IO.primitive(Executors.newScheduledThreadPool(i)).map(ScheduleIO.fromScheduledExecutorService)
 
   def fixedThreadPool(i: Int): IO[SubmitIO] =

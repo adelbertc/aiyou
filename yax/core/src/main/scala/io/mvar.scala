@@ -6,7 +6,6 @@ import java.util.concurrent.LinkedBlockingQueue
 
 // all operations are atomic
 trait MVar[A] {
-
   def put(a: A): IO[Unit]
 
   def take: IO[A]
@@ -22,7 +21,6 @@ trait MVar[A] {
 }
 
 object MVar {
-
   def newEmptyMVar[A]: IO[MVar[A]] =
     IO.primitive {
       val q = new LinkedBlockingQueue[A](1)
@@ -38,5 +36,4 @@ object MVar {
 
   def newMVar[A](a: A): IO[MVar[A]] =
     newEmptyMVar[A].flatMap(mv => mv.put(a).map(_ => mv))
-
 }

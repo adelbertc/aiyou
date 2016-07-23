@@ -1,14 +1,22 @@
 package io
 
-import io.compat.Eithery
-
-import scala.annotation.tailrec
-import scala.language.higherKinds
 import java.util.concurrent.Callable
 
-sealed abstract class IO[A] { self =>
+import scala.annotation.tailrec
 
-  def unsafePerformIO: A
+#+cats
+import cats.{Eval, Monad}
+import cats.data.Xor
+import cats.data.Xor.{Left, Right}
+#-cats
+
+#+scalaz
+import scalaz.{Monad, Catchable}
+import scalaz.{\/ => Xor, -\/ => Left, \/- => Right}
+#-scalaz
+
+sealed abstract class IO[A] { self =>
+  def unsafePerformIO(): A
 
   def map[B](f: A => B): IO[B] =
     flatMap(a => IO.Pure(f(a)))
@@ -34,20 +42,17 @@ sealed abstract class IO[A] { self =>
         }
     }
 
-  def attempt[E[_, _]](implicit ev: Eithery[E]): IO[E[Throwable, A]] =
-    IO.primitive(try ev.right(unsafePerformIO) catch { case t: Throwable => ev.left(t) })
+  def attempt: IO[Xor[Throwable, A]] =
+    IO.primitive(try Right(unsafePerformIO) catch { case t: Throwable => Left(t) })
 
-  /** Like `attempt` but catches (and maps) only where defined. */
-  def attemptSome[E[_, _], B](p: PartialFunction[Throwable, B])(implicit ev: Eithery[E]): IO[E[B, A]] =
-    attempt.map(ev.leftMap(_)(e => p.lift(e).getOrElse(throw e)))
+  def attemptSome[B](p: PartialFunction[Throwable, B]): IO[Xor[B, A]] =
+    attempt.map(_.leftMap(e => p.lift(e).getOrElse(throw e)))
 
-  /** Executes the handler, for exceptions propagating from `ma`. */
-  def except(handler: Throwable => IO[A]): IO[A] = {
-    val E = io.compat.stdlib.StdlibEithery
-    attempt(E).flatMap(e => E.merge(E.bimap(e)(handler, IO.pure)))
-  }
+  /** Executes the handler, for exceptions propagating from this action`. */
+  def except(handler: Throwable => IO[A]): IO[A] =
+    attempt.flatMap(e => e.bimap(handler, IO.pure).merge)
 
-  /** Executes the handler where defined, for exceptions propagating from `ma`. */
+  /** Executes the handler where defined, for exceptions propagating from this action. */
   def exceptSome(pf: PartialFunction[Throwable, IO[A]]): IO[A] =
     except(e => pf.lift(e).getOrElse((throw e)))
 
@@ -55,22 +60,17 @@ sealed abstract class IO[A] { self =>
   def onException[B](action: IO[B]): IO[A] =
     except(e => action.flatMap(_ => IO.fail(e)))
 
-  /** Always execute `sequel` following `ma`; generalizes `finally`. */
+  /** Always execute `sequel` following this action; generalizes `finally`. */
   def ensuring[B](sequel: IO[B]): IO[A] =
     onException(sequel).flatMap(a => sequel.map(_ => a))
 
   def void: IO[Unit] =
     map(_ => ())
 
-  def unsafeRunnable: Callable[A] =
-    new Callable[A] {
-      def call: A = unsafePerformIO
-    }
-
+  def toCallable: Callable[A] = new Callable[A] { def call(): A = unsafePerformIO() }
 }
 
-object IO extends IOFunctions {
-
+object IO extends IOInstances with IOFunctions {
   def pure[A](a: A): IO[A] =
     Pure(a)
 
@@ -113,12 +113,38 @@ object IO extends IOFunctions {
 
 }
 
-trait IOFunctions {
+private[io] sealed trait IOInstances {
+  implicit val MonadIO: Monad[IO] =
+    new Monad[IO] {
+#+scalaz
+      def bind[A, B](fa: IO[A])(f: A => IO[B]): IO[B] = fa.flatMap(f)
+#-scalaz
+#+cats
+      def flatMap[A, B](fa: IO[A])(f: A => IO[B]): IO[B] = fa.flatMap(f)
+#-cats
+      override def map[A, B](fa: IO[A])(f: A => B): IO[B] = fa.map(f)
+#+scalaz
+      def point[A](a: => A): IO[A] = IO.pure(a)
+#-scalaz
+#+cats
+      def pure[A](a: A): IO[A] = IO.pure(a)
+      override def pureEval[A](a: Eval[A]): IO[A] = IO.primitive(a.value)
+#-cats
+    }
 
+#+scalaz
+  implicit val CatchableIO: Catchable[IO] =
+    new Catchable[IO] {
+      def attempt[A](fa: IO[A]): IO[Xor[Throwable, A]] = fa.attempt
+      def fail[A](t: Throwable): IO[A] = IO.fail(t)
+    }
+#-scalaz
+}
+
+private[io] sealed trait IOFunctions {
   val unit: IO[Unit] =
     IO.pure(())
 
   def fail[A](t: Throwable): IO[A] =
     IO.primitive(throw t)
-
 }
