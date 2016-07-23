@@ -1,36 +1,42 @@
 import UnidocKeys._
 import ReleaseTransformations._
 
-enablePlugins(CrossPerProjectPlugin)
-
-lazy val buildSettings = Seq(
+lazy val buildSettings = List(
 	organization := "org.tpolecat",
-	licenses ++= Seq(
+	licenses ++= List(
 		("MIT", url("http://opensource.org/licenses/MIT")),
 		("BSD New", url("http://opensource.org/licenses/BSD-3-Clause"))
 	),
 	scalaVersion := "2.11.8",
-	crossScalaVersions := Seq("2.10.6", scalaVersion.value, "2.12.0-M3"),
-  addCompilerPlugin("org.spire-math" % "kind-projector" % "0.7.1" cross CrossVersion.binary)
+	crossScalaVersions := List("2.10.6", scalaVersion.value),
+  addCompilerPlugin("org.spire-math" % "kind-projector" % "0.8.0" cross CrossVersion.binary)
 )
 
-lazy val commonSettings = Seq(
-	scalacOptions ++= Seq(
-		"-feature",
-		"-deprecation",
-		"-Yno-adapted-args",
-		"-Ywarn-value-discard",
-		"-Xlint",
-		"-Xfatal-warnings",
-	  "-unchecked"
+lazy val commonSettings = List(
+	scalacOptions ++= List(
+    "-deprecation",
+    "-encoding", "UTF-8",
+    "-feature",
+    "-language:existentials",
+    "-language:higherKinds",
+    "-language:implicitConversions",
+    "-unchecked",
+    "-Xfatal-warnings",
+    "-Xlint",
+    "-Yno-adapted-args",
+    "-Ywarn-dead-code",
+    "-Ywarn-value-discard"
 	),
-	scalacOptions in compile ++= Seq(
+	scalacOptions in compile ++= List(
 		"-Yno-imports",
 		"-Ywarn-numeric-widen"
-	)
+	),
+  libraryDependencies ++= List(
+    "org.scalacheck" %% "scalacheck" % "1.13.2" % "test"
+  )
 )
 
-lazy val publishSettings = Seq(
+lazy val publishSettings = List(
   publishMavenStyle := true,
   publishTo := {
     val nexus = "https://oss.sonatype.org/"
@@ -57,7 +63,7 @@ lazy val publishSettings = Seq(
   ),
   releaseCrossBuild := true,
   releasePublishArtifactsAction := PgpKeys.publishSigned.value,
-  releaseProcess := Seq[ReleaseStep](
+  releaseProcess := List[ReleaseStep](
     checkSnapshotDependencies,
     inquireVersions,
     runClean,
@@ -72,7 +78,7 @@ lazy val publishSettings = Seq(
     pushChanges)
 )
 
-lazy val noPublishSettings = Seq(
+lazy val noPublishSettings = List(
   publish := (),
   publishLocal := (),
   publishArtifact := false
@@ -82,33 +88,28 @@ lazy val io = project.in(file("."))
   .settings(buildSettings ++ commonSettings)
   .settings(noPublishSettings)
   .settings(unidocSettings)
-  .settings(unidocProjectFilter in (ScalaUnidoc, unidoc) := inAnyProject -- inProjects(tests))
-  .dependsOn(core, tests, scalaz71, scalaz72, cats)
-  .aggregate(core, tests, scalaz71, scalaz72, cats)
+  .dependsOn(core_cats, core_scalaz)
+  .aggregate(core_cats, core_scalaz)
 
-lazy val core = project.in(file("core"))
-  .settings(buildSettings ++ commonSettings ++ publishSettings)
-  .settings(name := "io-core")
+lazy val core_cats = project.in(file("core-cats"))
+  .settings(
+    name := "core-cats",
+    yax(file("yax/core"), "cats"),
+    buildSettings ++ commonSettings ++ publishSettings,
+    libraryDependencies ++= List(
+      "org.typelevel" %% "cats" % "0.6.1"
+    )
+  )
 
-lazy val tests = project.in(file("tests")).dependsOn(core, scalaz71, cats)
-  .settings(buildSettings ++ commonSettings ++ noPublishSettings)
-  .settings(name := "io-tests")
-  .settings(libraryDependencies += "org.scalacheck" %% "scalacheck" % "1.13.0" % "test")
+val scalazVersion = "7.2.4"
 
-lazy val scalaz71 = project.in(file("compat/scalaz71")).dependsOn(core)
-  .settings(buildSettings ++ commonSettings ++ publishSettings)
-  .settings(name := "io-compat-scalaz71")
-  .settings(libraryDependencies += "org.scalaz" %% "scalaz-core" % "7.1.6")
-
-lazy val scalaz72 = project.in(file("compat/scalaz72")).dependsOn(core)
-  .settings(buildSettings ++ commonSettings ++ publishSettings)
-  .settings(name := "io-compat-scalaz72")
-  .settings(libraryDependencies += "org.scalaz" %% "scalaz-core" % "7.2.1")
-
-lazy val cats = project.in(file("compat/cats")).dependsOn(core)
-  .settings(buildSettings ++ commonSettings ++ publishSettings)
-  .settings(name := "io-compat-cats")
-  .settings(libraryDependencies += "org.typelevel" %% "cats" % "0.5.0")
-  .settings(crossScalaVersions := crossScalaVersions.value.filterNot(_.startsWith("2.12")))
-
-
+lazy val core_scalaz = project.in(file("core-scalaz"))
+  .settings(
+    name := "core-scalaz",
+    yax(file("yax/core"), "scalaz"),
+    buildSettings ++ commonSettings ++ publishSettings,
+    libraryDependencies ++= List(
+      "org.scalaz"  %% "scalaz-core"    % scalazVersion,
+      "org.scalaz"  %% "scalaz-effect"  % scalazVersion
+    )
+  )
