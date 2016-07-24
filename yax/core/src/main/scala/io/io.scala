@@ -6,13 +6,13 @@ import scala.annotation.tailrec
 
 #+cats
 import cats.{Eval, Monad}
-import cats.data.Xor
+import cats.data.{Xor => Either}
 import cats.data.Xor.{Left, Right}
 #-cats
 
 #+scalaz
 import scalaz.{Monad, Catchable}
-import scalaz.{\/ => Xor, -\/ => Left, \/- => Right}
+import scalaz.{\/ => Either, -\/ => Left, \/- => Right}
 #-scalaz
 
 sealed abstract class IO[A] { self =>
@@ -42,10 +42,10 @@ sealed abstract class IO[A] { self =>
         }
     }
 
-  def attempt: IO[Xor[Throwable, A]] =
+  def attempt: IO[Either[Throwable, A]] =
     IO.primitive(try Right(unsafePerformIO) catch { case t: Throwable => Left(t) })
 
-  def attemptSome[B](p: PartialFunction[Throwable, B]): IO[Xor[B, A]] =
+  def attemptSome[B](p: PartialFunction[Throwable, B]): IO[Either[B, A]] =
     attempt.map(_.leftMap(e => p.lift(e).getOrElse(throw e)))
 
   /** Executes the handler, for exceptions propagating from this action`. */
@@ -63,6 +63,8 @@ sealed abstract class IO[A] { self =>
   /** Always execute `sequel` following this action; generalizes `finally`. */
   def ensuring[B](sequel: IO[B]): IO[A] =
     onException(sequel).flatMap(a => sequel.map(_ => a))
+
+  def lift[F[_]: LiftIO]: F[A] = LiftIO[F].liftIO(this)
 
   def void: IO[Unit] =
     map(_ => ())
@@ -114,28 +116,26 @@ object IO extends IOInstances with IOFunctions {
 }
 
 private[io] sealed trait IOInstances {
-  implicit val MonadIO: Monad[IO] =
-    new Monad[IO] {
-#+scalaz
-      def bind[A, B](fa: IO[A])(f: A => IO[B]): IO[B] = fa.flatMap(f)
-#-scalaz
+  implicit val ioMonadIoForIo: MonadIO[IO] = new MonadIO[IO] {
+    def liftIO[A](io: IO[A]): IO[A] = io
 #+cats
-      def flatMap[A, B](fa: IO[A])(f: A => IO[B]): IO[B] = fa.flatMap(f)
+    def flatMap[A, B](fa: IO[A])(f: A => IO[B]): IO[B] = fa.flatMap(f)
+    def pure[A](a: A): IO[A] = IO.pure(a)
+    override def pureEval[A](a: Eval[A]): IO[A] = IO.primitive(a.value)
 #-cats
-      override def map[A, B](fa: IO[A])(f: A => B): IO[B] = fa.map(f)
-#+scalaz
-      def point[A](a: => A): IO[A] = IO.pure(a)
-#-scalaz
-#+cats
-      def pure[A](a: A): IO[A] = IO.pure(a)
-      override def pureEval[A](a: Eval[A]): IO[A] = IO.primitive(a.value)
-#-cats
-    }
 
 #+scalaz
-  implicit val CatchableIO: Catchable[IO] =
+    def bind[A, B](fa: IO[A])(f: A => IO[B]): IO[B] = fa.flatMap(f)
+    def point[A](a: => A): IO[A] = IO.pure(a)
+#-scalaz
+
+    override def map[A, B](fa: IO[A])(f: A => B): IO[B] = fa.map(f)
+  }
+
+#+scalaz
+  implicit val ioCatchableForIo: Catchable[IO] =
     new Catchable[IO] {
-      def attempt[A](fa: IO[A]): IO[Xor[Throwable, A]] = fa.attempt
+      def attempt[A](fa: IO[A]): IO[Either[Throwable, A]] = fa.attempt
       def fail[A](t: Throwable): IO[A] = IO.fail(t)
     }
 #-scalaz
