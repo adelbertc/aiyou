@@ -11,6 +11,34 @@ import scalaz.{Kleisli, OptionT, EitherT, Monad, MonadError, Monoid, StateT, Wri
 
 trait MonadCatch[F[_]] extends Monad[F] {
   def except[A](fa: F[A])(f: Throwable => F[A]): F[A]
+
+  private def flatmap[A, B](fa: F[A])(f: A => F[B]): F[B] =
+#+cats
+    flatMap(fa)(f)
+#-cats
+
+#+scalaz
+    bind(fa)(f)
+#-scalaz
+
+  def onException[A, B](fa: F[A], action: F[B]): F[A] =
+    except(fa)(t => flatmap[B, A](action)(_ => throw t))
+
+  def bracket[A, B, C](before: F[A])(during: A => F[B])(after: A => F[C]): F[B] =
+    flatmap(before) { a =>
+      flatmap(onException(during(a), after(a))) { r =>
+        map(after(a))(_ => r)
+      }
+    }
+
+  def bracket_[A, B, C](before: F[A])(during: F[B])(after: F[C]): F[B] =
+    bracket(before)(_ => during)(_ => after)
+
+  def bracketOnError[A, B, C](before: F[A])(during: A => F[B])(after: A => F[C]): F[B] =
+    flatmap(before)(a => onException(during(a), after(a)))
+
+  def ensuring[A, B](fa: F[A], after: F[B]): F[A] =
+    flatmap(onException(fa, after))(r => map(after)(_ => r))
 }
 
 object MonadCatch extends MonadCatchInstances {
