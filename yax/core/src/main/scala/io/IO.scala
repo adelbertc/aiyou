@@ -13,6 +13,7 @@ import cats.data.Xor.{Left, Right}
 #+scalaz
 import scalaz.{Monad, Catchable}
 import scalaz.{\/ => Either, -\/ => Left, \/- => Right}
+import scalaz.effect.{IO => IOz, MonadCatchIO => MonadCatchz, MonadIO => MonadIOz}
 #-scalaz
 
 sealed abstract class IO[A] { self =>
@@ -116,21 +117,30 @@ object IO extends IOInstances with IOFunctions {
 }
 
 private[io] sealed trait IOInstances {
-  implicit val ioMonadIoForIo: MonadIO[IO] = new MonadIO[IO] {
-    def liftIO[A](io: IO[A]): IO[A] = io
 #+cats
-    def flatMap[A, B](fa: IO[A])(f: A => IO[B]): IO[B] = fa.flatMap(f)
-    def pure[A](a: A): IO[A] = IO.pure(a)
-    override def pureEval[A](a: Eval[A]): IO[A] = IO.primitive(a.value)
+  implicit val ioInstancesForIo: MonadCatch[IO] with MonadIO[IO] = new MonadCatch[IO] with MonadIO[IO] {
 #-cats
 
 #+scalaz
-    def bind[A, B](fa: IO[A])(f: A => IO[B]): IO[B] = fa.flatMap(f)
-    def point[A](a: => A): IO[A] = IO.pure(a)
+  implicit val ioInstancesForIo: MonadCatch[IO] with MonadCatchz[IO] with MonadIO[IO] with MonadIOz[IO] =
+    new MonadCatch[IO] with MonadCatchz[IO] with MonadIO[IO] with MonadIOz[IO] {
+      def liftIO[A](ioa: IOz[A]): IO[A] = IO.primitive(ioa.unsafePerformIO())
+#-scalaz
+      def except[A](fa: IO[A])(handler: Throwable => IO[A]): IO[A] = fa.except(handler)
+      def liftIO[A](io: IO[A]): IO[A] = io
+#+cats
+      def flatMap[A, B](fa: IO[A])(f: A => IO[B]): IO[B] = fa.flatMap(f)
+      def pure[A](a: A): IO[A] = IO.pure(a)
+      override def pureEval[A](a: Eval[A]): IO[A] = IO.primitive(a.value)
+#-cats
+
+#+scalaz
+      def bind[A, B](fa: IO[A])(f: A => IO[B]): IO[B] = fa.flatMap(f)
+      def point[A](a: => A): IO[A] = IO.pure(a)
 #-scalaz
 
-    override def map[A, B](fa: IO[A])(f: A => B): IO[B] = fa.map(f)
-  }
+      override def map[A, B](fa: IO[A])(f: A => B): IO[B] = fa.map(f)
+    }
 
 #+scalaz
   implicit val ioCatchableForIo: Catchable[IO] =

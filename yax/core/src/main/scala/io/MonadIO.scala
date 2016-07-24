@@ -11,9 +11,11 @@ import scalaz.{Kleisli, OptionT, EitherT, Monad, Monoid, StateT, WriterT}
 
 trait MonadIO[F[_]] extends Monad[F] with LiftIO[F]
 
-object MonadIO {
+object MonadIO extends MonadIOInstances {
   def apply[F[_]](implicit F: MonadIO[F]): MonadIO[F] = F
+}
 
+private[io] sealed trait MonadIOInstances {
   private def derive[F[_]](implicit MF: Monad[F], LF: LiftIO[F]): MonadIO[F] = new MonadIO[F] {
     def liftIO[A](io: IO[A]): F[A] = LF.liftIO(io)
 
@@ -28,7 +30,6 @@ object MonadIO {
     def point[A](a: => A): F[A] = MF.pure(a)
 #-scalaz
   }
-
 
   implicit def ioMonadIoForEitherT[F[_]: MonadIO, X]: MonadIO[EitherT[F, X, ?]] = derive[EitherT[F, X, ?]]
 
