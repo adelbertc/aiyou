@@ -2,7 +2,7 @@ package io
 
 import java.util.concurrent.{ Future => JFuture, Executors, ExecutorService, TimeUnit, ScheduledExecutorService, ScheduledFuture }
 
-case class Forked[A](cancel: IO[Boolean], get: IO[A]) {
+final case class Forked[A](cancel: IO[Boolean], get: IO[A]) {
   def map[B](f: A => B): Forked[B] =
     Forked(cancel, get.map(f))
 
@@ -22,7 +22,7 @@ object Forked {
 
 }
 
-sealed trait SubmitIO {
+sealed abstract class SubmitIO {
   def submit[A](ioa: IO[A]): IO[Forked[A]]
   def shutdown: IO[Unit]
 }
@@ -37,7 +37,7 @@ object SubmitIO {
     }
 }
 
-sealed trait ScheduleIO {
+sealed abstract class ScheduleIO {
   def schedule[A](io: IO[A], delay: Long, units: TimeUnit): IO[Forked[A]]
 }
 
