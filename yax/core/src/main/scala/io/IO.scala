@@ -11,7 +11,7 @@ import cats.data.Xor.{Left, Right}
 #-cats
 
 #+scalaz
-import scalaz.{Monad, Catchable}
+import scalaz.{BindRec, Monad, Catchable}
 import scalaz.{\/ => Either, -\/ => Left, \/- => Right}
 import scalaz.effect.{IO => IOz, MonadCatchIO => MonadCatchz, MonadIO => MonadIOz}
 #-scalaz
@@ -42,6 +42,8 @@ sealed abstract class IO[A] { self =>
           val run = f
         }
     }
+
+  def forever: IO[A] = flatMap(_ => this)
 
   def attempt: IO[Either[Throwable, A]] =
     IO.primitive(try Right(unsafePerformIO) catch { case t: Throwable => Left(t) })
@@ -122,8 +124,13 @@ private[io] sealed trait IOInstances {
 #-cats
 
 #+scalaz
-  implicit val ioInstancesForIO: MonadCatch[IO] with MonadCatchz[IO] with MonadIO[IO] with MonadIOz[IO] =
-    new MonadCatch[IO] with MonadCatchz[IO] with MonadIO[IO] with MonadIOz[IO] {
+  implicit val ioInstancesForIO: BindRec[IO] with MonadCatch[IO] with MonadCatchz[IO] with MonadIO[IO] with MonadIOz[IO] =
+    new BindRec[IO] with MonadCatch[IO] with MonadCatchz[IO] with MonadIO[IO] with MonadIOz[IO] {
+      def tailrecM[A, B](f: A => IO[Either[A, B]])(a: A): IO[B] =
+        f(a).flatMap(_ match {
+          case Left(a)  => tailrecM(f)(a) // OK because trampoline
+          case Right(b) => IO.pure(b)
+        })
       def liftIO[A](ioa: IOz[A]): IO[A] = IO.primitive(ioa.unsafePerformIO())
 #-scalaz
       def except[A](fa: IO[A])(handler: Throwable => IO[A]): IO[A] = fa.except(handler)
