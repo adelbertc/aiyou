@@ -118,11 +118,11 @@ object IO extends IOInstances with IOFunctions {
 
 private[io] sealed trait IOInstances {
 #+cats
-  implicit val ioInstancesForIo: MonadCatch[IO] with MonadIO[IO] = new MonadCatch[IO] with MonadIO[IO] {
+  implicit val ioInstancesForIO: MonadCatch[IO] with MonadIO[IO] = new MonadCatch[IO] with MonadIO[IO] {
 #-cats
 
 #+scalaz
-  implicit val ioInstancesForIo: MonadCatch[IO] with MonadCatchz[IO] with MonadIO[IO] with MonadIOz[IO] =
+  implicit val ioInstancesForIO: MonadCatch[IO] with MonadCatchz[IO] with MonadIO[IO] with MonadIOz[IO] =
     new MonadCatch[IO] with MonadCatchz[IO] with MonadIO[IO] with MonadIOz[IO] {
       def liftIO[A](ioa: IOz[A]): IO[A] = IO.primitive(ioa.unsafePerformIO())
 #-scalaz
@@ -143,7 +143,7 @@ private[io] sealed trait IOInstances {
     }
 
 #+scalaz
-  implicit val ioCatchableForIo: Catchable[IO] =
+  implicit val ioCatchableForIO: Catchable[IO] =
     new Catchable[IO] {
       def attempt[A](fa: IO[A]): IO[Either[Throwable, A]] = fa.attempt
       def fail[A](t: Throwable): IO[A] = IO.fail(t)

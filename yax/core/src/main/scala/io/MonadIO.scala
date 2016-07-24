@@ -31,13 +31,13 @@ private[io] sealed trait MonadIOInstances {
 #-scalaz
   }
 
-  implicit def ioMonadIoForEitherT[F[_]: MonadIO, X]: MonadIO[EitherT[F, X, ?]] = derive[EitherT[F, X, ?]]
+  implicit def ioMonadIOForEitherT[F[_]: MonadIO, X]: MonadIO[EitherT[F, X, ?]] = derive[EitherT[F, X, ?]]
 
-  implicit def ioMonadIoForKleisli[F[_]: MonadIO, X]: MonadIO[Kleisli[F, X, ?]] = derive[Kleisli[F, X, ?]]
+  implicit def ioMonadIOForKleisli[F[_]: MonadIO, X]: MonadIO[Kleisli[F, X, ?]] = derive[Kleisli[F, X, ?]]
 
-  implicit def ioMonadIoForOptionT[F[_]: MonadIO]: MonadIO[OptionT[F, ?]] = derive[OptionT[F, ?]]
+  implicit def ioMonadIOForOptionT[F[_]: MonadIO]: MonadIO[OptionT[F, ?]] = derive[OptionT[F, ?]]
 
-  implicit def ioMonadIoForStateT[F[_]: MonadIO, X]: MonadIO[StateT[F, X, ?]] = derive[StateT[F, X, ?]]
+  implicit def ioMonadIOForStateT[F[_]: MonadIO, X]: MonadIO[StateT[F, X, ?]] = derive[StateT[F, X, ?]]
 
-  implicit def ioMonadIoForWriterT[F[_]: MonadIO, X: Monoid]: MonadIO[WriterT[F, X, ?]] = derive[WriterT[F, X, ?]]
+  implicit def ioMonadIOForWriterT[F[_]: MonadIO, X: Monoid]: MonadIO[WriterT[F, X, ?]] = derive[WriterT[F, X, ?]]
 }
