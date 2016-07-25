@@ -31,13 +31,16 @@ private[io] sealed trait MonadIOInstances {
 #-scalaz
   }
 
-  implicit def ioMonadIOForEitherT[F[_]: MonadIO, X]: MonadIO[EitherT[F, X, ?]] = derive[EitherT[F, X, ?]]
+  // Annotating return types here causes implicit resolution to
+  // pick up the instance itself and recurse indefinitely
 
-  implicit def ioMonadIOForKleisli[F[_]: MonadIO, X]: MonadIO[Kleisli[F, X, ?]] = derive[Kleisli[F, X, ?]]
+  implicit def ioMonadIOForEitherT[F[_]: MonadIO, X] = derive[EitherT[F, X, ?]]
 
-  implicit def ioMonadIOForOptionT[F[_]: MonadIO]: MonadIO[OptionT[F, ?]] = derive[OptionT[F, ?]]
+  implicit def ioMonadIOForKleisli[F[_]: MonadIO, X] = derive[Kleisli[F, X, ?]]
 
-  implicit def ioMonadIOForStateT[F[_]: MonadIO, X]: MonadIO[StateT[F, X, ?]] = derive[StateT[F, X, ?]]
+  implicit def ioMonadIOForOptionT[F[_]: MonadIO] = derive[OptionT[F, ?]]
 
-  implicit def ioMonadIOForWriterT[F[_]: MonadIO, X: Monoid]: MonadIO[WriterT[F, X, ?]] = derive[WriterT[F, X, ?]]
+  implicit def ioMonadIOForStateT[F[_]: MonadIO, X] = derive[StateT[F, X, ?]]
+
+  implicit def ioMonadIOForWriterT[F[_]: MonadIO, X: Monoid] = derive[WriterT[F, X, ?]]
 }

@@ -46,7 +46,7 @@ sealed abstract class IO[A] { self =>
   def forever: IO[A] = flatMap(_ => this)
 
   def attempt: IO[Either[Throwable, A]] =
-    IO.primitive(try Right(unsafePerformIO) catch { case t: Throwable => Left(t) })
+    IO.primitive(try Right(unsafePerformIO()) catch { case t: Throwable => Left(t) })
 
   def attemptSome[B](p: PartialFunction[Throwable, B]): IO[Either[B, A]] =
     attempt.map(_.leftMap(e => p.lift(e).getOrElse(throw e)))
@@ -143,7 +143,7 @@ private[io] sealed trait IOInstances {
       def fail[A](t: Throwable): IO[A] = IO.fail(t)
       def liftIO[A](ioa: IOz[A]): IO[A] = IO.primitive(ioa.unsafePerformIO())
       def bind[A, B](fa: IO[A])(f: A => IO[B]): IO[B] = fa.flatMap(f)
-      def point[A](a: => A): IO[A] = IO.pure(a)
+      def point[A](a: => A): IO[A] = IO.primitive(a)
 #-scalaz
 
       def except[A](fa: IO[A])(handler: Throwable => IO[A]): IO[A] = fa.except(handler)
