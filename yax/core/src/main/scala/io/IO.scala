@@ -119,43 +119,37 @@ object IO extends IOInstances with IOFunctions {
 }
 
 private[io] sealed trait IOInstances {
-#+cats
-  implicit val ioInstancesForIO: MonadCatch[IO] with MonadIO[IO] = new MonadCatch[IO] with MonadIO[IO] {
-#-cats
-
 #+scalaz
-  implicit val ioInstancesForIO: BindRec[IO] with MonadCatch[IO] with MonadCatchz[IO] with MonadIO[IO] with MonadIOz[IO] =
-    new BindRec[IO] with MonadCatch[IO] with MonadCatchz[IO] with MonadIO[IO] with MonadIOz[IO] {
-      def tailrecM[A, B](f: A => IO[Either[A, B]])(a: A): IO[B] =
-        f(a).flatMap(_ match {
-          case Left(a)  => tailrecM(f)(a) // OK because trampoline
-          case Right(b) => IO.pure(b)
-        })
-      def liftIO[A](ioa: IOz[A]): IO[A] = IO.primitive(ioa.unsafePerformIO())
+  implicit val ioInstancesForIO:
+        BindRec[IO] with Catchable[IO] with MonadCatch[IO] with MonadCatchz[IO] with MonadIO[IO] with MonadIOz[IO] =
+    new BindRec[IO] with Catchable[IO] with MonadCatch[IO] with MonadCatchz[IO] with MonadIO[IO] with MonadIOz[IO] {
 #-scalaz
-      def except[A](fa: IO[A])(handler: Throwable => IO[A]): IO[A] = fa.except(handler)
-      def liftIO[A](io: IO[A]): IO[A] = io
+
 #+cats
+  implicit val ioInstancesForIO: MonadCatch[IO] with MonadIO[IO] =
+    new MonadCatch[IO] with MonadIO[IO] {
       def flatMap[A, B](fa: IO[A])(f: A => IO[B]): IO[B] = fa.flatMap(f)
       def pure[A](a: A): IO[A] = IO.pure(a)
       override def pureEval[A](a: Eval[A]): IO[A] = IO.primitive(a.value)
 #-cats
 
 #+scalaz
+      def tailrecM[A, B](f: A => IO[Either[A, B]])(a: A): IO[B] =
+        f(a).flatMap(_ match {
+          case Left(a)  => tailrecM(f)(a) // OK because trampoline
+          case Right(b) => IO.pure(b)
+        })
+      def attempt[A](fa: IO[A]): IO[Either[Throwable, A]] = fa.attempt
+      def fail[A](t: Throwable): IO[A] = IO.fail(t)
+      def liftIO[A](ioa: IOz[A]): IO[A] = IO.primitive(ioa.unsafePerformIO())
       def bind[A, B](fa: IO[A])(f: A => IO[B]): IO[B] = fa.flatMap(f)
       def point[A](a: => A): IO[A] = IO.pure(a)
 #-scalaz
 
+      def except[A](fa: IO[A])(handler: Throwable => IO[A]): IO[A] = fa.except(handler)
+      def liftIO[A](io: IO[A]): IO[A] = io
       override def map[A, B](fa: IO[A])(f: A => B): IO[B] = fa.map(f)
     }
-
-#+scalaz
-  implicit val ioCatchableForIO: Catchable[IO] =
-    new Catchable[IO] {
-      def attempt[A](fa: IO[A]): IO[Either[Throwable, A]] = fa.attempt
-      def fail[A](t: Throwable): IO[A] = IO.fail(t)
-    }
-#-scalaz
 }
 
 private[io] sealed trait IOFunctions {
