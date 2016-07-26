@@ -1,6 +1,9 @@
 import UnidocKeys._
 import ReleaseTransformations._
 
+val catsVersion = "0.6.1"
+val scalazVersion = "7.2.4"
+
 lazy val buildSettings = List(
   organization := "org.tpolecat",
   licenses ++= List(
@@ -30,9 +33,6 @@ lazy val commonSettings = List(
   scalacOptions in compile ++= List(
     "-Yno-imports",
     "-Ywarn-numeric-widen"
-  ),
-  libraryDependencies ++= List(
-    "org.scalacheck" %% "scalacheck" % "1.13.2" % "test"
   )
 )
 
@@ -88,8 +88,8 @@ lazy val io = project.in(file("."))
   .settings(buildSettings ++ commonSettings)
   .settings(noPublishSettings)
   .settings(unidocSettings)
-  .dependsOn(core_cats, core_scalaz)
-  .aggregate(core_cats, core_scalaz)
+  .dependsOn(core_cats, laws_cats, tests_cats, core_scalaz, laws_scalaz, tests_scalaz)
+  .aggregate(core_cats, laws_cats, tests_cats, core_scalaz, laws_scalaz, tests_scalaz)
 
 lazy val core_cats = project.in(file("core-cats"))
   .settings(
@@ -97,11 +97,33 @@ lazy val core_cats = project.in(file("core-cats"))
     yax(file("yax/core"), "cats"),
     buildSettings ++ commonSettings ++ publishSettings,
     libraryDependencies ++= List(
-      "org.typelevel" %% "cats" % "0.6.1"
+      "org.typelevel" %% "cats-core" % catsVersion
     )
   )
 
-val scalazVersion = "7.2.4"
+lazy val laws_cats = project.in(file("laws-cats"))
+  .dependsOn(core_cats)
+  .settings(
+    name := "laws-cats",
+    yax(file("yax/laws"), "cats"),
+    buildSettings ++ commonSettings ++ publishSettings,
+    libraryDependencies ++= List(
+      "org.typelevel"   %% "cats-laws"  % catsVersion,
+      "org.scalacheck"  %% "scalacheck" % "1.12.5"
+    )
+  )
+
+lazy val tests_cats = project.in(file("tests-cats"))
+  .dependsOn(core_cats, laws_cats)
+  .settings(
+    yax(file("yax/tests"), "cats"),
+    buildSettings ++ commonSettings,
+    libraryDependencies ++= List(
+      "org.typelevel"   %% "discipline"         % "0.5"     % "test",
+      "org.specs2"      %% "specs2-core"        % "3.6.6"   % "test",
+      "org.specs2"      %% "specs2-scalacheck"  % "3.6.6"   % "test"
+    )
+  )
 
 lazy val core_scalaz = project.in(file("core-scalaz"))
   .settings(
@@ -111,5 +133,28 @@ lazy val core_scalaz = project.in(file("core-scalaz"))
     libraryDependencies ++= List(
       "org.scalaz"  %% "scalaz-core"    % scalazVersion,
       "org.scalaz"  %% "scalaz-effect"  % scalazVersion
+    )
+  )
+
+lazy val laws_scalaz = project.in(file("laws-scalaz"))
+  .dependsOn(core_scalaz)
+  .settings(
+    name := "laws-scalaz",
+    yax(file("yax/laws"), "scalaz"),
+    buildSettings ++ commonSettings ++ publishSettings,
+    libraryDependencies ++= List(
+      "org.scalaz"      %% "scalaz-scalacheck-binding"  % scalazVersion,
+      "org.scalacheck"  %% "scalacheck"                 % "1.12.5"
+    )
+  )
+
+lazy val tests_scalaz = project.in(file("tests-scalaz"))
+  .dependsOn(core_scalaz, laws_scalaz)
+  .settings(
+    yax(file("yax/tests"), "scalaz"),
+    buildSettings ++ commonSettings,
+    libraryDependencies ++= List(
+      "org.specs2"  %% "specs2-core"        % "3.7"  % "test",
+      "org.specs2"  %% "specs2-scalacheck"  % "3.7"  % "test"
     )
   )

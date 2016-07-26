@@ -2,11 +2,11 @@ package io
 
 #+cats
 import cats.{Eval, Monad, Monoid}
-import cats.data.{Kleisli, OptionT, StateT, WriterT, XorT => EitherT}
+import cats.data.{Kleisli, OptionT, StateT, WriterT}
 #-cats
 
 #+scalaz
-import scalaz.{Kleisli, OptionT, EitherT, Monad, MonadError, Monoid, StateT, WriterT}
+import scalaz.{Kleisli, OptionT, Monad, Monoid, StateT, WriterT}
 #-scalaz
 
 trait MonadCatch[F[_]] extends Monad[F] {
@@ -46,26 +46,6 @@ object MonadCatch extends MonadCatchInstances {
 }
 
 private[io] sealed trait MonadCatchInstances {
-  implicit def ioMonadCatchForEitherT[F[_]: MonadCatch]: MonadCatch[EitherT[F, Throwable, ?]] =
-    new MonadCatchInstance[EitherT[?[_], Throwable, ?], F] {
-      val monad =
-#+cats
-        EitherT.xorTMonadError[F, Throwable]
-#-cats
-
-#+scalaz
-        EitherT.eitherTMonadError[F, Throwable]
-#-scalaz
-      def except[A](fa: EitherT[F, Throwable, A])(f: Throwable => EitherT[F, Throwable, A]): EitherT[F, Throwable, A] =
-#+cats
-        fa.recoverWith { case t: Throwable => f(t) }
-#-cats
-
-#+scalaz
-        MonadError[EitherT[F, Throwable, ?], Throwable].handleError(fa)(f)
-#-scalaz
-    }
-
   implicit def ioMonadCatchForKleisli[F[_]: MonadCatch, X]: MonadCatch[Kleisli[F, X, ?]] =
     new MonadCatchInstance[Kleisli[?[_], X, ?], F] {
       val monad =
