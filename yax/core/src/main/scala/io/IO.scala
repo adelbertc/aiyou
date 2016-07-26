@@ -5,13 +5,13 @@ import java.util.concurrent.Callable
 import scala.annotation.tailrec
 
 #+cats
-import cats.{Eval, Monad}
+import cats.{Eval, Monad, Show}
 import cats.data.{Xor => Either}
 import cats.data.Xor.{Left, Right}
 #-cats
 
 #+scalaz
-import scalaz.{BindRec, Monad, Catchable}
+import scalaz.{BindRec, Catchable, Monad, Show}
 import scalaz.{\/ => Either, -\/ => Left, \/- => Right}
 import scalaz.effect.{IO => IOz, MonadCatchIO => MonadCatchz, MonadIO => MonadIOz}
 #-scalaz
@@ -153,6 +153,29 @@ private[io] sealed trait IOInstances {
 }
 
 private[io] sealed trait IOFunctions {
+  def print(s: String): IO[Unit] = IO.primitive {
+    print(s)
+    ()
+  }
+
+  def println(s: String): IO[Unit] = IO.primitive {
+    println(s)
+    ()
+  }
+
+  private def show[A](a: A)(implicit A: Show[A]): String =
+#+cats
+    A.show(a)
+#-cats
+
+#+scalaz
+    A.shows(a)
+#-scalaz
+
+  def put[A: Show](a: A): IO[Unit] = print(show(a))
+
+  def putLn[A: Show](a: A): IO[Unit] = println(show(a))
+
   val unit: IO[Unit] =
     IO.pure(())
 
