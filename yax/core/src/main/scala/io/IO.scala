@@ -67,7 +67,7 @@ sealed abstract class IO[A] { self =>
   def ensuring[B](sequel: IO[B]): IO[A] =
     onException(sequel).flatMap(a => sequel.map(_ => a))
 
-  def lift[F[_]: LiftIO]: F[A] = LiftIO[F].liftIO(this)
+  def liftIO[F[_]: LiftIO]: F[A] = LiftIO[F].liftIO(this)
 
   def void: IO[Unit] =
     map(_ => ())
@@ -154,12 +154,12 @@ private[io] sealed trait IOInstances {
 
 private[io] sealed trait IOFunctions {
   def print(s: String): IO[Unit] = IO.primitive {
-    print(s)
+    Predef.print(s)
     ()
   }
 
   def println(s: String): IO[Unit] = IO.primitive {
-    println(s)
+    Predef.println(s)
     ()
   }
 
