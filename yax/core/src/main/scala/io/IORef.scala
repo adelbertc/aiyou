@@ -1,11 +1,14 @@
 package io
 
+/** A mutable reference protected by [[IO]]. */
 final class IORef[A] private(@volatile protected var value: A) {
   def read: IO[A] = IO.primitive(value)
 
   def write(a: A): IO[Unit] = IO.primitive(value = a)
 
-  /** Modify the value behind the reference with the function. Please note that modify is not an atomic operation. */
+  /** Modify the value behind the reference with the function. Please note that modify is not an atomic operation.
+    * If safe access across threads is needed, see [[MVar]].
+    */
   def modify(f: A => A): IO[Unit] = for {
     a <- read
     _ <- write(f(a))

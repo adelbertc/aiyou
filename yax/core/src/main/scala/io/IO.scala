@@ -16,7 +16,9 @@ import scalaz.{\/ => Either, -\/ => Left, \/- => Right}
 import scalaz.effect.{IO => IOz, MonadCatchIO => MonadCatchz, MonadIO => MonadIOz}
 #-scalaz
 
+/** An IO action, when run, will produce a value of type A */
 sealed abstract class IO[A] { self =>
+  /** Run this action, possible throwing an exception. Use `attempt` before calling this if you don't want to throw. */
   def unsafePerformIO(): A
 
   def map[B](f: A => B): IO[B] =
@@ -43,15 +45,18 @@ sealed abstract class IO[A] { self =>
         }
     }
 
+  /** Creates an IO action that, when run, performs the action of this action indefinitely */
   def forever: IO[A] = flatMap(_ => this)
 
+  /** Creates an IO action that, when run, produces either a `Throwable` or the `A` */
   def attempt: IO[Either[Throwable, A]] =
     IO.primitive(try Right(unsafePerformIO()) catch { case t: Throwable => Left(t) })
 
+  /** Like `attempt`, but transforms (a subset of) exceptions before handing it back. */
   def attemptSome[B](p: PartialFunction[Throwable, B]): IO[Either[B, A]] =
     attempt.map(_.leftMap(e => p.lift(e).getOrElse(throw e)))
 
-  /** Executes the handler, for exceptions propagating from this action`. */
+  /** Executes the handler, for exceptions propagating from this action. */
   def except(handler: Throwable => IO[A]): IO[A] =
     attempt.flatMap(e => e.bimap(handler, IO.pure).merge)
 
@@ -63,10 +68,11 @@ sealed abstract class IO[A] { self =>
   def onException[B](action: IO[B]): IO[A] =
     except(e => action.flatMap(_ => IO.fail(e)))
 
-  /** Always execute `sequel` following this action; generalizes `finally`. */
+  /** Always execute `sequel` following this action. */
   def ensuring[B](sequel: IO[B]): IO[A] =
     onException(sequel).flatMap(a => sequel.map(_ => a))
 
+  /** Lift this action into another effect. */
   def liftIO[F[_]: LiftIO]: F[A] = LiftIO[F].liftIO(this)
 
   def void: IO[Unit] =
@@ -76,9 +82,11 @@ sealed abstract class IO[A] { self =>
 }
 
 object IO extends IOInstances with IOFunctions {
+  /** Lift a pure value into [[IO]]. */
   def pure[A](a: A): IO[A] =
     Pure(a)
 
+  /** Lift an impure value into [[IO]]. */
   def primitive[A](a: => A): IO[A] =
     new Primitive(a _)
 

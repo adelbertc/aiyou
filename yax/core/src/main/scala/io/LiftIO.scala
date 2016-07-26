@@ -10,7 +10,9 @@ import cats.data.Xor.Right
 import scalaz.{\/- => Right, Kleisli, OptionT, EitherT, Monad, Monoid, StateT, WriterT}
 #-scalaz
 
+/** Type class for effects that can have IO. */
 trait LiftIO[F[_]] {
+  /** Lift an IO action in the effect */
   def liftIO[A](io: IO[A]): F[A]
 }
 

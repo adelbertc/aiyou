@@ -9,8 +9,10 @@ import cats.data.{Kleisli, OptionT, StateT, WriterT}
 import scalaz.{Kleisli, OptionT, Monad, Monoid, StateT, WriterT}
 #-scalaz
 
+/** Type class for effects that can catch and handle exceptions. */
 trait MonadCatch[F[_]] extends Monad[F] {
-  def except[A](fa: F[A])(f: Throwable => F[A]): F[A]
+  /** Attempt to run `fa`, handling exceptions in the process. */
+  def except[A](fa: F[A])(handler: Throwable => F[A]): F[A]
 
   private def flatmap[A, B](fa: F[A])(f: A => F[B]): F[B] =
 #+cats

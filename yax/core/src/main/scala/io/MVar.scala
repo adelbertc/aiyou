@@ -1,23 +1,27 @@
 package io
 
-// an MVar simply wraps a LinkedBlockingQueue with a length of 1
-
 import java.util.concurrent.LinkedBlockingQueue
 
-// all operations are atomic
+/** A thread-safe mutable reference protected by [[IO]]. */
 sealed abstract class MVar[A] {
+  /** Put the value into the variable if it is empty, waiting for it to be so if necessary. */
   def put(a: A): IO[Unit]
 
+  /** Get the contents of the variable, emptying it in the process. If variable is empty, wait until it is not. */
   def take: IO[A]
 
+  /** Try to put the value into the (empty) variable immediately, returning true. Return false if variable is non-empty. */
   def tryPut(a: A): IO[Boolean]
 
+  /** Like `tryTake` but does not empty the variable. */
   def tryRead: IO[Option[A]]
 
+  /** Try to take the value of the (filled) variable immediately, emptying it in the process. */
   def tryTake: IO[Option[A]]
 
   def isEmpty: IO[Boolean]
 
+  def nonEmpty: IO[Boolean] = isEmpty.map(!_)
 }
 
 object MVar {
