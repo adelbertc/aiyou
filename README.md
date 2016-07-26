@@ -1,4 +1,7 @@
 # io
+
+[![Travis CI](https://travis-ci.org/adelbertc/io.svg?branch=master)](https://travis-ci.org/adelbertc/io)
+
 IO types and classes for Scala.
 
 ```scala
