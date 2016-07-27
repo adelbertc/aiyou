@@ -4,55 +4,24 @@ package laws
 #+cats
 import cats.data.{Xor => Either}
 import cats.data.Xor.{Left, Right}
-import cats.kernel.{Eq => Equal}
+import cats.kernel.Eq
 #-cats
 
 #+scalaz
-import scalaz.{\/ => Either, -\/ => Left, \/- => Right, Equal}
+import scalaz.{\/ => Either, -\/ => Left, \/- => Right, Equal => Eq}
 #-scalaz
 
-trait Eq[A] { outer =>
-  def eqv(x: A, y: A): Boolean
-
-  def by[B](f: B => A): Eq[B] = new Eq[B] {
-    def eqv(x: B, y: B): Boolean =
-      outer.eqv(f(x), f(y))
-  }
-}
-
-object Eq extends EqInstances0 {
-  def apply[A](implicit A: Eq[A]): Eq[A] = A
-}
-
-private[laws] sealed trait EqInstances0 extends EqInstances1 {
-  implicit def ioLawsEqForIO[A](implicit A: Eq[A]): Eq[IO[A]] = new Eq[IO[A]] {
-    def eqv(x: IO[A], y: IO[A]): Boolean =
-      (x.attempt.unsafePerformIO(), y.attempt.unsafePerformIO()) match {
-        case (Left(t1), Left(t2))   => Eq[Throwable].eqv(t1, t2)
-        case (Right(a1), Right(a2)) => A.eqv(a1, a2)
-        case _                      => false
-      }
-  }
-
-  implicit val ioLawsEqForThrowable: Eq[Throwable] = new Eq[Throwable] {
-    def eqv(x: Throwable, y: Throwable): Boolean =
-      x.getMessage == y.getMessage
-  }
-}
-
-private[laws] sealed trait EqInstances1 {
-  implicit def ioLawsEqualToEq[A](implicit A: Equal[A]): Eq[A] = new Eq[A] {
-    def eqv(x: A, y: A): Boolean =
+object eq {
+  def checkEq[A](x: A, y: A)(implicit A: Eq[A]): Boolean =
 #+cats
-      A.eqv(x, y)
+    A.eqv(x, y)
 #-cats
 
 #+scalaz
-      A.equal(x, y)
+    A.equal(x, y)
 #-scalaz
-  }
 
-  implicit def ioLawsEqToEqual[A](implicit A: Eq[A]): Equal[A] = new Equal[A] {
+  def eqBy[A, B](f: A => B)(implicit B: Eq[B]): Eq[A] = new Eq[A] {
 #+cats
     def eqv(x: A, y: A): Boolean =
 #-cats
@@ -60,6 +29,43 @@ private[laws] sealed trait EqInstances1 {
 #+scalaz
     def equal(x: A, y: A): Boolean =
 #-scalaz
-      A.eqv(x, y)
+      checkEq(f(x), f(y))
+  }
+
+  def instance[A](f: (A, A) => Boolean): Eq[A] = new Eq[A] {
+#+cats
+    def eqv(x: A, y: A): Boolean =
+#-cats
+
+#+scalaz
+    def equal(x: A, y: A): Boolean =
+#-scalaz
+      f(x, y)
+  }
+
+  implicit def ioLawsEqForIO[A: Eq]: Eq[IO[A]] = new Eq[IO[A]] {
+#+cats
+    def eqv(x: IO[A], y: IO[A]): Boolean =
+#-cats
+
+#+scalaz
+    def equal(x: IO[A], y: IO[A]): Boolean =
+#-scalaz
+      (x.attempt.unsafePerformIO(), y.attempt.unsafePerformIO()) match {
+        case (Left(t1), Left(t2))   => checkEq(t1, t2)
+        case (Right(a1), Right(a2)) => checkEq(a1, a2)
+        case _                      => false
+      }
+  }
+
+  implicit val ioLawsEqForThrowable: Eq[Throwable] = new Eq[Throwable] {
+#+cats
+    def eqv(x: Throwable, y: Throwable): Boolean =
+#-cats
+
+#+scalaz
+    def equal(x: Throwable, y: Throwable): Boolean =
+#-scalaz
+      x.getMessage == y.getMessage
   }
 }

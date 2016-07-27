@@ -1,9 +1,8 @@
 package io
 package tests
 
-import io.laws.Eq
-import io.laws.Eq.ioLawsEqToEqual
 import io.laws.arbitrary._
+import io.laws.eq._
 import io.laws.laws._
 
 import org.scalacheck.{Arbitrary, Properties}
@@ -13,6 +12,7 @@ import org.specs2.specification.core.Fragments
 import scala.util.Random
 
 #+cats
+import cats.Eq
 import cats.data.{Kleisli, OptionT, StateT, WriterT, XorT => EitherT}
 import cats.implicits._
 import cats.laws.discipline.MonadTests
@@ -23,7 +23,7 @@ class LawTests extends Specification with ScalaCheck with Discipline {
 #-cats
 
 #+scalaz
-import scalaz.{EitherT, Kleisli, OptionT, StateT, WriterT}
+import scalaz.{EitherT, Equal => Eq, Kleisli, OptionT, StateT, WriterT}
 import scalaz.Scalaz._
 import scalaz.scalacheck.ScalazArbitrary._
 import scalaz.scalacheck.ScalazProperties.monad
@@ -69,9 +69,13 @@ class LawTests extends Specification with ScalaCheck {
 
   def ioMonadCatch = monadCatchTestsFor[IO]
 
-  def eitherTMonadIO = monadIOTestsFor[EitherT[IO, Int, ?]]
+  def eitherTMonadIO = {
 
-  implicit def ioTestsEqForKleisliIOInt[A: Eq]: Eq[Kleisli[IO, Int, A]] = Eq[Int => IO[A]].by(_.run)
+    monadIOTestsFor[EitherT[IO, Int, ?]]
+  }
+
+  implicit def ioTestsEqForKleisliIOInt[A: Eq]: Eq[Kleisli[IO, Int, A]] =
+    eqBy[Kleisli[IO, Int, A], Int => IO[A]](_.run)
 
   def kleisliMonadIO =
     monadIOTestsFor[Kleisli[IO, Int, ?]]
@@ -96,7 +100,8 @@ class LawTests extends Specification with ScalaCheck {
     monadCatchTestsFor[OptionT[IO, ?]]
 #-scalaz
 
-  implicit def ioTestsEqForStateTIOInt[A: Eq]: Eq[StateT[IO, Int, A]] = Eq[Int => IO[(Int, A)]].by(_.run)
+  implicit def ioTestsEqForStateTIOInt[A: Eq]: Eq[StateT[IO, Int, A]] =
+    eqBy[StateT[IO, Int, A], Int => IO[(Int, A)]](_.run)
 
   def stateTMonadIO =
     monadIOTestsFor[StateT[IO, Int, ?]]
@@ -135,10 +140,16 @@ class LawTests extends Specification with ScalaCheck {
   implicit def ioLawsEqForIntIOFunction[A](implicit A: Eq[A]): Eq[Int => IO[A]] =
     new Eq[Int => IO[A]] {
       val tests = List.fill(500)(Random.nextInt())
+#+cats
       def eqv(x: Int => IO[A], y: Int => IO[A]): Boolean = {
+#-cats
+
+#+scalaz
+      def equal(x: Int => IO[A], y: Int => IO[A]): Boolean = {
+#-scalaz
         val xs = tests.map(x)
         val ys = tests.map(y)
-        xs.zip(ys).forall { case (x1, x2) => Eq[IO[A]].eqv(x1, x2) }
+        xs.zip(ys).forall { case (x1, x2) => checkEq(x1, x2) }
       }
     }
 }

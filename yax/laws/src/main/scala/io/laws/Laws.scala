@@ -2,14 +2,15 @@ package io
 package laws
 
 #+cats
-import cats.{Eval, Monad}
+import cats.{Eq, Eval, Monad}
 #-cats
 
 #+scalaz
-import scalaz.Monad
+import scalaz.{Equal => Eq, Monad}
 #-scalaz
 
 import io.laws.arbitrary._
+import io.laws.eq.checkEq
 
 import org.scalacheck.{Arbitrary, Cogen, Prop, Properties}
 import org.scalacheck.Prop.forAll
@@ -43,14 +44,14 @@ object laws {
     def pure[F[_], A](implicit FAE: Eq[F[A]], FM: MonadIO[F], A: Arbitrary[A]): Prop = forAll { (a: A) =>
       val got = FM.liftIO(IO.pure(a))
       val expected = FM.pure(a)
-      FAE.eqv(got, expected)
+      checkEq(got, expected)
     }
 
     def flatMap[F[_], A, B](implicit FBE: Eq[F[B]], FM: MonadIO[F], AA: Arbitrary[A], AC: Cogen[A], B: Arbitrary[B]): Prop =
       forAll { (io: IO[A], f: A => IO[B]) =>
         val got = FM.liftIO(io.flatMap(f))
         val expected = flatmap(FM.liftIO(io))(a => FM.liftIO(f(a)))
-        FBE.eqv(got, expected)
+        checkEq(got, expected)
       }
 
     def laws[F[_], A, B](implicit FAE: Eq[F[A]], FBE: Eq[F[B]], FM: MonadIO[F], AA: Arbitrary[A], AC: Cogen[A], B: Arbitrary[B]): Properties =
@@ -64,7 +65,7 @@ object laws {
   object monadCatch {
     def except[F[_], A](implicit FAA: Arbitrary[F[A]], FAE: Eq[F[A]], FM: MonadCatch[F]): Prop =
       forAll { (e: Throwable, f: Throwable => F[A]) =>
-        FAE.eqv(FM.except(lazyPure[F, A](throw e))(f), f(e))
+        checkEq(FM.except(lazyPure[F, A](throw e))(f), f(e))
       }
 
     def laws[F[_], A](implicit FAA: Arbitrary[F[A]], FAE: Eq[F[A]], FM: MonadCatch[F]): Properties =
