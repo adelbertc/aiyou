@@ -138,7 +138,6 @@ private[io] sealed trait IOInstances {
     new MonadCatch[IO] with MonadIO[IO] {
       def flatMap[A, B](fa: IO[A])(f: A => IO[B]): IO[B] = fa.flatMap(f)
       def pure[A](a: A): IO[A] = IO.pure(a)
-      override def pureEval[A](a: Eval[A]): IO[A] = IO.primitive(a.value)
 #-cats
 
 #+scalaz
@@ -151,7 +150,7 @@ private[io] sealed trait IOInstances {
       def fail[A](t: Throwable): IO[A] = IO.fail(t)
       def liftIO[A](ioa: IOz[A]): IO[A] = IO.primitive(ioa.unsafePerformIO())
       def bind[A, B](fa: IO[A])(f: A => IO[B]): IO[B] = fa.flatMap(f)
-      def point[A](a: => A): IO[A] = IO.primitive(a)
+      def point[A](a: => A): IO[A] = IO.pure(a)
 #-scalaz
 
       def except[A](fa: IO[A])(handler: Throwable => IO[A]): IO[A] = fa.except(handler)
