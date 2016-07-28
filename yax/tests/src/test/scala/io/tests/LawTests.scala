@@ -69,10 +69,7 @@ class LawTests extends Specification with ScalaCheck {
 
   def ioMonadCatch = monadCatchTestsFor[IO]
 
-  def eitherTMonadIO = {
-
-    monadIOTestsFor[EitherT[IO, Int, ?]]
-  }
+  def eitherTMonadIO = monadIOTestsFor[EitherT[IO, Int, ?]]
 
   implicit def ioTestsEqForKleisliIOInt[A: Eq]: Eq[Kleisli[IO, Int, A]] =
     eqBy[Kleisli[IO, Int, A], Int => IO[A]](_.run)
