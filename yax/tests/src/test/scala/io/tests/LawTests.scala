@@ -15,7 +15,7 @@ import scala.util.Random
 import cats.Eq
 import cats.data.{Kleisli, OptionT, StateT, WriterT, XorT => EitherT}
 import cats.implicits._
-import cats.laws.discipline.MonadTests
+import cats.laws.discipline.MonadErrorTests
 import cats.laws.discipline.arbitrary._
 import org.typelevel.discipline.specs2.Discipline
 
@@ -26,13 +26,13 @@ class LawTests extends Specification with ScalaCheck with Discipline {
 import scalaz.{EitherT, Equal => Eq, Kleisli, OptionT, StateT, WriterT}
 import scalaz.Scalaz._
 import scalaz.scalacheck.ScalazArbitrary._
-import scalaz.scalacheck.ScalazProperties.monad
+import scalaz.scalacheck.ScalazProperties.monadError
 
 class LawTests extends Specification with ScalaCheck {
 #-scalaz
   def is = s2"""
   IO
-    monad       ${ioMonad}
+    monadError  ${ioMonadError}
     monadIO     ${ioMonadIO}
     monadCatch  ${ioMonadCatch}
 
@@ -56,13 +56,13 @@ class LawTests extends Specification with ScalaCheck {
     monadCatch  ${writerTMonadCatch}
   """
 
-  def ioMonad =
+  def ioMonadError =
 #+cats
-    checkAll("Monad[IO]", MonadTests[IO].monad[Int, String, Char])
+    checkAll("MonadError[IO]", MonadErrorTests[IO, Throwable].monadError[Int, String, Char])
 #-cats
 
 #+scalaz
-    properties(monad.laws[IO])
+    properties(monadError.laws[IO, Throwable])
 #-scalaz
 
   def ioMonadIO = monadIOTestsFor[IO]
