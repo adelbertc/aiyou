@@ -5,13 +5,13 @@ import java.util.concurrent.Callable
 import scala.annotation.tailrec
 
 #+cats
-import cats.{Eval, Monad, Show}
+import cats.{Eval, MonadError, Show}
 import cats.data.{Xor => Either}
 import cats.data.Xor.{Left, Right}
 #-cats
 
 #+scalaz
-import scalaz.{BindRec, Catchable, Monad, Show}
+import scalaz.{BindRec, Catchable, MonadError, Show}
 import scalaz.{\/ => Either, -\/ => Left, \/- => Right}
 #-scalaz
 
@@ -128,13 +128,13 @@ object IO extends IOInstances with IOFunctions {
 private[io] sealed trait IOInstances {
 #+scalaz
   implicit val ioInstancesForIO:
-        BindRec[IO] with Catchable[IO] with MonadCatch[IO] with MonadIO[IO] =
-    new BindRec[IO] with Catchable[IO] with MonadCatch[IO] with MonadIO[IO] {
+        BindRec[IO] with Catchable[IO] with MonadCatch[IO] with MonadError[IO, Throwable] with MonadIO[IO] =
+    new BindRec[IO] with Catchable[IO] with MonadCatch[IO] with MonadError[IO, Throwable] with MonadIO[IO] {
 #-scalaz
 
 #+cats
-  implicit val ioInstancesForIO: MonadCatch[IO] with MonadIO[IO] =
-    new MonadCatch[IO] with MonadIO[IO] {
+  implicit val ioInstancesForIO: MonadCatch[IO] with MonadError[IO, Throwable] with MonadIO[IO] =
+    new MonadCatch[IO] with MonadError[IO, Throwable] with MonadIO[IO] {
       def flatMap[A, B](fa: IO[A])(f: A => IO[B]): IO[B] = fa.flatMap(f)
       def pure[A](a: A): IO[A] = IO.pure(a)
 #-cats
@@ -150,6 +150,18 @@ private[io] sealed trait IOInstances {
       def bind[A, B](fa: IO[A])(f: A => IO[B]): IO[B] = fa.flatMap(f)
       def point[A](a: => A): IO[A] = IO.pure(a)
 #-scalaz
+
+#+cats
+      def handleErrorWith[A](fa: IO[A])(f: Throwable => IO[A]): IO[A] =
+#-cats
+
+#+scalaz
+      def handleError[A](fa: IO[A])(f: Throwable => IO[A]): IO[A] =
+#-scalaz
+
+        except(fa)(f)
+
+      def raiseError[A](e: Throwable): IO[A] = IO.fail(e)
 
       def except[A](fa: IO[A])(handler: Throwable => IO[A]): IO[A] = fa.except(handler)
       def throwM[A](throwable: Throwable): IO[A] = IO.fail(throwable)
