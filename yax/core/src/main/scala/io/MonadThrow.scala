@@ -1,12 +1,11 @@
 package io
 
 #+cats
-import cats.{Eval, Monad, Monoid}
-import cats.data.{Kleisli, OptionT, StateT, WriterT}
+import cats.Monad
 #-cats
 
 #+scalaz
-import scalaz.{Kleisli, OptionT, Monad, Monoid, StateT, WriterT}
+import scalaz.Monad
 #-scalaz
 
 trait MonadThrow[F[_]] extends Monad[F] {
