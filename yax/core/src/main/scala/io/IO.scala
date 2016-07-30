@@ -152,6 +152,7 @@ private[io] sealed trait IOInstances {
 #-scalaz
 
       def except[A](fa: IO[A])(handler: Throwable => IO[A]): IO[A] = fa.except(handler)
+      def raise[A](throwable: Throwable): IO[A] = IO.fail(throwable)
       def liftIO[A](io: IO[A]): IO[A] = io
       override def map[A, B](fa: IO[A])(f: A => B): IO[B] = fa.map(f)
     }

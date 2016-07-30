@@ -14,6 +14,9 @@ trait MonadCatch[F[_]] extends Monad[F] {
   /** Attempt to run `fa`, handling exceptions in the process. */
   def except[A](fa: F[A])(handler: Throwable => F[A]): F[A]
 
+  /** Raise an exception. */
+  def raise[A](throwable: Throwable): F[A]
+
   private def flatmap[A, B](fa: F[A])(f: A => F[B]): F[B] =
 #+cats
     flatMap(fa)(f)
@@ -61,6 +64,8 @@ private[io] sealed trait MonadCatchInstances {
 
       def except[A](fa: Kleisli[F, X, A])(handler: Throwable => Kleisli[F, X, A]): Kleisli[F, X, A] =
         Kleisli((x: X) => MonadCatch[F].except(fa.run(x))(t => handler(t).run(x)))
+      def raise[A](throwable: Throwable): Kleisli[F, X, A] =
+        Kleisli(_ => MonadCatch[F].raise(throwable))
     }
 
   implicit def ioMonadCatchForOptionT[F[_]: MonadCatch]: MonadCatch[OptionT[F, ?]] =
@@ -85,6 +90,8 @@ private[io] sealed trait MonadCatchInstances {
 #-scalaz
         OptionT(MonadCatch[F].except(unwrap(fa))(t => unwrap(handler(t))))
       }
+
+      def raise[A](throwable: Throwable): OptionT[F, A] = OptionT(MonadCatch[F].raise(throwable))
     }
 
   implicit def ioMonadCatchForStateT[F[_]: MonadCatch, X]: MonadCatch[StateT[F, X, ?]] =
@@ -100,6 +107,8 @@ private[io] sealed trait MonadCatchInstances {
 
       def except[A](fa: StateT[F, X, A])(handler: Throwable => StateT[F, X, A]): StateT[F, X, A] =
         StateT(x => MonadCatch[F].except(fa.run(x))(t => handler(t).run(x)))
+
+      def raise[A](throwable: Throwable): StateT[F, X, A] = StateT(_ => MonadCatch[F].raise(throwable))
     }
 
   implicit def ioMonadCatchForWriterT[F[_]: MonadCatch, X: Monoid]: MonadCatch[WriterT[F, X, ?]] =
@@ -115,6 +124,8 @@ private[io] sealed trait MonadCatchInstances {
 
       def except[A](fa: WriterT[F, X, A])(handler: Throwable => WriterT[F, X, A]): WriterT[F, X, A] =
         WriterT(MonadCatch[F].except(fa.run)(t => handler(t).run))
+
+      def raise[A](throwable: Throwable): WriterT[F, X, A] =WriterT(MonadCatch[F].raise(throwable))
     }
 }
 
