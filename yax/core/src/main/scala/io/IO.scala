@@ -13,7 +13,6 @@ import cats.data.Xor.{Left, Right}
 #+scalaz
 import scalaz.{BindRec, Catchable, Monad, Show}
 import scalaz.{\/ => Either, -\/ => Left, \/- => Right}
-import scalaz.effect.{IO => IOz, MonadCatchIO => MonadCatchz, MonadIO => MonadIOz}
 #-scalaz
 
 /** An IO action, when run, will produce a value of type A */
@@ -129,8 +128,8 @@ object IO extends IOInstances with IOFunctions {
 private[io] sealed trait IOInstances {
 #+scalaz
   implicit val ioInstancesForIO:
-        BindRec[IO] with Catchable[IO] with MonadCatch[IO] with MonadCatchz[IO] with MonadIO[IO] with MonadIOz[IO] =
-    new BindRec[IO] with Catchable[IO] with MonadCatch[IO] with MonadCatchz[IO] with MonadIO[IO] with MonadIOz[IO] {
+        BindRec[IO] with Catchable[IO] with MonadCatch[IO] with MonadIO[IO] =
+    new BindRec[IO] with Catchable[IO] with MonadCatch[IO] with MonadIO[IO] {
 #-scalaz
 
 #+cats
@@ -148,7 +147,6 @@ private[io] sealed trait IOInstances {
         })
       def attempt[A](fa: IO[A]): IO[Either[Throwable, A]] = fa.attempt
       def fail[A](t: Throwable): IO[A] = IO.fail(t)
-      def liftIO[A](ioa: IOz[A]): IO[A] = IO.primitive(ioa.unsafePerformIO())
       def bind[A, B](fa: IO[A])(f: A => IO[B]): IO[B] = fa.flatMap(f)
       def point[A](a: => A): IO[A] = IO.pure(a)
 #-scalaz

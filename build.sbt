@@ -131,8 +131,7 @@ lazy val core_scalaz = project.in(file("core-scalaz"))
     yax(file("yax/core"), "scalaz"),
     buildSettings ++ commonSettings ++ publishSettings,
     libraryDependencies ++= List(
-      "org.scalaz"  %% "scalaz-core"    % scalazVersion,
-      "org.scalaz"  %% "scalaz-effect"  % scalazVersion
+      "org.scalaz"  %% "scalaz-core"  % scalazVersion
     )
   )
 
