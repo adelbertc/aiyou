@@ -13,7 +13,6 @@ import cats.data.Xor.{Left, Right}
 #+scalaz
 import scalaz.{BindRec, Catchable, MonadError, Show}
 import scalaz.{\/ => Either, -\/ => Left, \/- => Right}
-import scalaz.effect.{IO => IOz, MonadCatchIO => MonadCatchz, MonadIO => MonadIOz}
 #-scalaz
 
 /** An IO action, when run, will produce a value of type A */
@@ -129,8 +128,8 @@ object IO extends IOInstances with IOFunctions {
 private[io] sealed trait IOInstances {
 #+scalaz
   implicit val ioInstancesForIO:
-        BindRec[IO] with Catchable[IO] with MonadCatch[IO] with MonadCatchz[IO] with MonadError[IO, Throwable] with MonadIO[IO] with MonadIOz[IO] =
-    new BindRec[IO] with Catchable[IO] with MonadCatch[IO] with MonadCatchz[IO] with MonadError[IO, Throwable] with MonadIO[IO] with MonadIOz[IO] {
+        BindRec[IO] with Catchable[IO] with MonadCatch[IO] with MonadError[IO, Throwable] with MonadIO[IO] =
+    new BindRec[IO] with Catchable[IO] with MonadCatch[IO] with MonadError[IO, Throwable] with MonadIO[IO] {
 #-scalaz
 
 #+cats
@@ -138,7 +137,6 @@ private[io] sealed trait IOInstances {
     new MonadCatch[IO] with MonadError[IO, Throwable] with MonadIO[IO] {
       def flatMap[A, B](fa: IO[A])(f: A => IO[B]): IO[B] = fa.flatMap(f)
       def pure[A](a: A): IO[A] = IO.pure(a)
-      override def pureEval[A](a: Eval[A]): IO[A] = IO.primitive(a.value)
 #-cats
 
 #+scalaz
@@ -149,9 +147,8 @@ private[io] sealed trait IOInstances {
         })
       def attempt[A](fa: IO[A]): IO[Either[Throwable, A]] = fa.attempt
       def fail[A](t: Throwable): IO[A] = IO.fail(t)
-      def liftIO[A](ioa: IOz[A]): IO[A] = IO.primitive(ioa.unsafePerformIO())
       def bind[A, B](fa: IO[A])(f: A => IO[B]): IO[B] = fa.flatMap(f)
-      def point[A](a: => A): IO[A] = IO.primitive(a)
+      def point[A](a: => A): IO[A] = IO.pure(a)
 #-scalaz
 
 #+cats
@@ -167,6 +164,7 @@ private[io] sealed trait IOInstances {
       def raiseError[A](e: Throwable): IO[A] = IO.fail(e)
 
       def except[A](fa: IO[A])(handler: Throwable => IO[A]): IO[A] = fa.except(handler)
+      def throwM[A](throwable: Throwable): IO[A] = IO.fail(throwable)
       def liftIO[A](io: IO[A]): IO[A] = io
       override def map[A, B](fa: IO[A])(f: A => B): IO[B] = fa.map(f)
     }

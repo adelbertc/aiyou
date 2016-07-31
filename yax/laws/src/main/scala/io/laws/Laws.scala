@@ -25,15 +25,6 @@ object laws {
     Monad[F].bind(fa)(f)
 #-scalaz
 
-  private def lazyPure[F[_]: Monad, A](a: => A): F[A] =
-#+cats
-    Monad[F].pureEval(Eval.always(a))
-#-cats
-
-#+scalaz
-    Monad[F].point(a)
-#-scalaz
-
   private def newProperties(name: String)(f: Properties => Unit): Properties = {
     val p = new Properties(name)
     f(p)
@@ -62,14 +53,29 @@ object laws {
       }
   }
 
+  object monadThrow {
+    def shortCircuit[F[_], A](implicit FAA: Arbitrary[F[A]], FAE: Eq[F[A]], FT: MonadThrow[F]): Prop =
+      forAll { (e: Throwable, x: F[A]) =>
+        val thrown = FT.throwM[A](e)
+        checkEq(flatmap(thrown)(_ => x), thrown)
+      }
+
+    def laws[F[_], A](implicit FAA: Arbitrary[F[A]], FAE: Eq[F[A]], FT: MonadThrow[F]): Properties =
+      newProperties("monadThrow") { p =>
+        p.property("throwM e >> x = throwM e") = shortCircuit[F, A]
+        ()
+      }
+  }
+
   object monadCatch {
     def except[F[_], A](implicit FAA: Arbitrary[F[A]], FAE: Eq[F[A]], FM: MonadCatch[F]): Prop =
       forAll { (e: Throwable, f: Throwable => F[A]) =>
-        checkEq(FM.except(lazyPure[F, A](throw e))(f), f(e))
+        checkEq(FM.except(FM.throwM[A](e))(f), f(e))
       }
 
     def laws[F[_], A](implicit FAA: Arbitrary[F[A]], FAE: Eq[F[A]], FM: MonadCatch[F]): Properties =
       newProperties("monadCatch") { p =>
+        p.include(monadThrow.laws[F, A])
         p.property("catch (throw e) f = f e") = except[F, A]
         ()
       }
