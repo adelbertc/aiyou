@@ -13,6 +13,7 @@ import scala.util.{Either => SEither, Random}
 
 #+cats
 import cats.Eq
+import cats.Applicative
 import cats.data.{Kleisli, OptionT, StateT, WriterT, Xor => Either, XorT => EitherT}
 import cats.kernel.laws.GroupLaws
 import cats.implicits._
@@ -98,54 +99,29 @@ class LawTests extends Specification with ScalaCheck {
   implicit def ioTestsEqForKleisliIOInt[A: Eq]: Eq[Kleisli[IO, Int, A]] =
     eqBy[Kleisli[IO, Int, A], Int => IO[A]](_.run)
 
-  def kleisliMonadIO =
-    monadIOTestsFor[Kleisli[IO, Int, ?]]
+  def kleisliMonadIO = monadIOTestsFor[Kleisli[IO, Int, ?]]
 
-  def kleisliMonadCatch =
-#+cats
-    ok
-#-cats
-
-#+scalaz
-    monadCatchTestsFor[Kleisli[IO, Int, ?]]
-#-scalaz
+  def kleisliMonadCatch = monadCatchTestsFor[Kleisli[IO, Int, ?]]
 
   def optionTMonadIO = monadIOTestsFor[OptionT[IO, ?]]
 
-  def optionTMonadCatch =
-#+cats
-    ok
-#-cats
-
-#+scalaz
-    monadCatchTestsFor[OptionT[IO, ?]]
-#-scalaz
+  def optionTMonadCatch = monadCatchTestsFor[OptionT[IO, ?]]
 
   implicit def ioTestsEqForStateTIOInt[A: Eq]: Eq[StateT[IO, Int, A]] =
     eqBy[StateT[IO, Int, A], Int => IO[(Int, A)]](_.run)
 
-  def stateTMonadIO =
-    monadIOTestsFor[StateT[IO, Int, ?]]
-
-  def stateTMonadCatch =
 #+cats
-    ok
+  implicit def ioLawsArbitraryForCatsStateT[F[_], S, A](implicit FApp: Applicative[F], FArb: Arbitrary[S => F[(S, A)]]): Arbitrary[StateT[F, S, A]] =
+    Arbitrary(FArb.arbitrary.map(StateT(_)))
 #-cats
 
-#+scalaz
-    monadCatchTestsFor[StateT[IO, Int, ?]]
-#-scalaz
+  def stateTMonadIO = monadIOTestsFor[StateT[IO, Int, ?]]
+
+  def stateTMonadCatch = monadCatchTestsFor[StateT[IO, Int, ?]]
 
   def writerTMonadIO = monadIOTestsFor[WriterT[IO, String, ?]]
 
-  def writerTMonadCatch =
-#+cats
-    ok
-#-cats
-
-#+scalaz
-    monadCatchTestsFor[WriterT[IO, Int, ?]]
-#-scalaz
+  def writerTMonadCatch = monadCatchTestsFor[WriterT[IO, Int, ?]]
 
   def monadIOTestsFor[F[_]](implicit FEI: Eq[F[Int]], FES: Eq[F[String]], FM: MonadIO[F]) =
     properties(monadIO.laws[F, Int, String])
