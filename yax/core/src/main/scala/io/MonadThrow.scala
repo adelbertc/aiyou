@@ -25,49 +25,28 @@ object MonadThrow extends MonadThrowInstances {
 private[io] sealed trait MonadThrowInstances {
   implicit def ioMonadThrowForEither: MonadThrow[Either[Throwable, ?]] =
     new MonadThrowInstance[Lambda[(F[_], A) => Either[Throwable, A]], Any] {
-      val monad =
-#+cats
-        Either.xorInstances[Throwable]
-#-cats
-
-#+scalaz
-        Either.DisjunctionInstances1[Throwable]
-#-scalaz
+      val monad = monadInstances.either[Throwable]
 
       def throwM[A](e: Throwable): Either[Throwable, A] = Either.left(e)
     }
 
   implicit def ioMonadThrowForEitherT[F[_]: MonadThrow, X]: MonadThrow[EitherT[F, X, ?]] =
     new MonadThrowInstance[EitherT[?[_], X, ?], F] {
-      val monad =
-#+cats
-        EitherT.xorTMonadError[F, X]
-#-cats
-
-#+scalaz
-        EitherT.eitherTMonad[F, X]
-#-scalaz
+      val monad = monadInstances.eitherT[F, X]
 
       def throwM[A](e: Throwable): EitherT[F, X, A] = EitherT.left(MonadThrow[F].throwM(e))
     }
 
   implicit def ioMonadThrowForSEither: MonadThrow[SEither[Throwable, ?]] =
     new MonadThrowInstance[Lambda[(F[_], A) => SEither[Throwable, A]], Any] {
-      val monad = seitherMonad[Throwable]
+      val monad = monadInstances.seither[Throwable]
 
       def throwM[A](e: Throwable): SEither[Throwable, A] = SLeft(e)
     }
 
   implicit def ioMonadThrowForKleisli[F[_]: MonadThrow, X]: MonadThrow[Kleisli[F, X, ?]] =
     new MonadThrowInstance[Kleisli[?[_], X, ?], F] {
-      val monad =
-#+cats
-        Kleisli.kleisliMonadReader[F, X]
-#-cats
-
-#+scalaz
-        Kleisli.kleisliMonadReader[F, X]
-#-scalaz
+      val monad = monadInstances.kleisli[F, X]
 
       def throwM[A](e: Throwable): Kleisli[F, X, A] =
         Kleisli(_ => MonadThrow[F].throwM(e))
@@ -75,44 +54,23 @@ private[io] sealed trait MonadThrowInstances {
 
   implicit def ioMonadThrowForOptionT[F[_]: MonadThrow]: MonadThrow[OptionT[F, ?]] =
     new MonadThrowInstance[OptionT, F] {
-      val monad =
-#+cats
-        OptionT.optionTMonad[F]
-#-cats
-
-#+scalaz
-        OptionT.optionTMonadPlus[F]
-#-scalaz
+      val monad = monadInstances.optionT[F]
 
       def throwM[A](e: Throwable): OptionT[F, A] = OptionT(MonadThrow[F].throwM(e))
     }
 
   implicit def ioMonadThrowForStateT[F[_]: MonadThrow, X]: MonadThrow[StateT[F, X, ?]] =
     new MonadThrowInstance[StateT[?[_], X, ?], F] {
-      val monad =
-#+cats
-        StateT.stateTMonadState[F, X]
-#-cats
-
-#+scalaz
-        StateT.stateTMonadState[X, F]
-#-scalaz
+      val monad = monadInstances.stateT[F, X]
 
       def throwM[A](e: Throwable): StateT[F, X, A] = StateT(_ => MonadThrow[F].throwM(e))
     }
 
   implicit def ioMonadThrowForWriterT[F[_]: MonadThrow, X: Monoid]: MonadThrow[WriterT[F, X, ?]] =
     new MonadThrowInstance[WriterT[?[_], X, ?], F] {
-      val monad =
-#+cats
-        WriterT.writerTMonadWriter[F, X]
-#-cats
+      val monad = monadInstances.writerT[F, X]
 
-#+scalaz
-        WriterT.writerTMonadListen[F, X]
-#-scalaz
-
-      def throwM[A](e: Throwable): WriterT[F, X, A] =WriterT(MonadThrow[F].throwM(e))
+      def throwM[A](e: Throwable): WriterT[F, X, A] = WriterT(MonadThrow[F].throwM(e))
     }
 }
 

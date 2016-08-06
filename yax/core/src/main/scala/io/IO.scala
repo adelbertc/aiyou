@@ -72,7 +72,7 @@ sealed abstract class IO[A] { self =>
     onException(sequel).flatMap(a => sequel.map(_ => a))
 
   /** Lift this action into another effect. */
-  def liftIO[F[_]: LiftIO]: F[A] = LiftIO[F].liftIO(this)
+  def liftIO[F[_]: MonadIO]: F[A] = MonadIO[F].liftIO(this)
 
   def void: IO[Unit] =
     map(_ => ())
