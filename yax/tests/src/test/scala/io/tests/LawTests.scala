@@ -14,6 +14,7 @@ import scala.util.{Either => SEither, Random}
 #+cats
 import cats.Eq
 import cats.data.{Kleisli, OptionT, StateT, WriterT, Xor => Either, XorT => EitherT}
+import cats.kernel.laws.GroupLaws
 import cats.implicits._
 import cats.laws.discipline.MonadErrorTests
 import cats.laws.discipline.arbitrary._
@@ -26,7 +27,7 @@ class LawTests extends Specification with ScalaCheck with Discipline {
 import scalaz.{\/ => Either, EitherT, Equal => Eq, Kleisli, OptionT, StateT, WriterT}
 import scalaz.Scalaz._
 import scalaz.scalacheck.ScalazArbitrary._
-import scalaz.scalacheck.ScalazProperties.monadError
+import scalaz.scalacheck.ScalazProperties.{monadError, monoid}
 
 class LawTests extends Specification with ScalaCheck {
 #-scalaz
@@ -35,6 +36,7 @@ class LawTests extends Specification with ScalaCheck {
     monadError  ${ioMonadError}
     monadIO     ${ioMonadIO}
     monadCatch  ${ioMonadCatch}
+    monoid      ${ioMonoid}
 
   Either
     monadCatch  ${eitherMonadCatch}
@@ -75,6 +77,15 @@ class LawTests extends Specification with ScalaCheck {
   def ioMonadIO = monadIOTestsFor[IO]
 
   def ioMonadCatch = monadCatchTestsFor[IO]
+
+  def ioMonoid =
+#+cats
+    checkAll("Monoid[IO[A]]", GroupLaws[IO[Int]].monoid)
+#-cats
+
+#+scalaz
+    properties(monoid.laws[IO[Int]])
+#-scalaz
 
   def eitherMonadCatch = monadCatchTestsFor[Either[Throwable, ?]]
 
