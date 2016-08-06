@@ -56,16 +56,16 @@ sealed abstract class IO[A] { self =>
     attempt.map(_.leftMap(e => p.lift(e).getOrElse(throw e)))
 
   /** Executes the handler, for exceptions propagating from this action. */
-  def except(handler: Throwable => IO[A]): IO[A] =
+  def catchM(handler: Throwable => IO[A]): IO[A] =
     attempt.flatMap(e => e.bimap(handler, IO.pure).merge)
 
   /** Executes the handler where defined, for exceptions propagating from this action. */
-  def exceptSome(pf: PartialFunction[Throwable, IO[A]]): IO[A] =
-    except(e => pf.lift(e).getOrElse((throw e)))
+  def catchMSome(pf: PartialFunction[Throwable, IO[A]]): IO[A] =
+    catchM(e => pf.lift(e).getOrElse((throw e)))
 
   /** Like "ensuring", but only performs the final action if there was an exception. */
   def onException[B](action: IO[B]): IO[A] =
-    except(e => action.flatMap(_ => IO.fail(e)))
+    catchM(e => action.flatMap(_ => IO.fail(e)))
 
   /** Always execute `sequel` following this action. */
   def ensuring[B](sequel: IO[B]): IO[A] =
@@ -159,11 +159,11 @@ private[io] sealed trait IOInstances {
       def handleError[A](fa: IO[A])(f: Throwable => IO[A]): IO[A] =
 #-scalaz
 
-        except(fa)(f)
+        catchM(fa)(f)
 
       def raiseError[A](e: Throwable): IO[A] = IO.fail(e)
 
-      def except[A](fa: IO[A])(handler: Throwable => IO[A]): IO[A] = fa.except(handler)
+      def catchM[A](fa: IO[A])(handler: Throwable => IO[A]): IO[A] = fa.catchM(handler)
       def throwM[A](throwable: Throwable): IO[A] = IO.fail(throwable)
       def liftIO[A](io: IO[A]): IO[A] = io
       override def map[A, B](fa: IO[A])(f: A => B): IO[B] = fa.map(f)

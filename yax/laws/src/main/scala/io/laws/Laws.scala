@@ -68,15 +68,15 @@ object laws {
   }
 
   object monadCatch {
-    def except[F[_], A](implicit FAA: Arbitrary[F[A]], FAE: Eq[F[A]], FM: MonadCatch[F]): Prop =
+    def catchM[F[_], A](implicit FAA: Arbitrary[F[A]], FAE: Eq[F[A]], FM: MonadCatch[F]): Prop =
       forAll { (e: Throwable, f: Throwable => F[A]) =>
-        checkEq(FM.except(FM.throwM[A](e))(f), f(e))
+        checkEq(FM.catchM(FM.throwM[A](e))(f), f(e))
       }
 
     def laws[F[_], A](implicit FAA: Arbitrary[F[A]], FAE: Eq[F[A]], FM: MonadCatch[F]): Properties =
       newProperties("monadCatch") { p =>
         p.include(monadThrow.laws[F, A])
-        p.property("catch (throw e) f = f e") = except[F, A]
+        p.property("catch (throw e) f = f e") = catchM[F, A]
         ()
       }
   }
