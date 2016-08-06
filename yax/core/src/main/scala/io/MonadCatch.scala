@@ -2,12 +2,14 @@ package io
 
 #+cats
 import cats.{Eval, Monad, Monoid}
-import cats.data.{Kleisli, OptionT, StateT, WriterT}
+import cats.data.{Kleisli, OptionT, StateT, WriterT, Xor => Either, XorT => EitherT}
 #-cats
 
 #+scalaz
-import scalaz.{Kleisli, OptionT, Monad, Monoid, StateT, WriterT}
+import scalaz.{\/ => Either, EitherT, Kleisli, OptionT, Monad, MonadError, Monoid, StateT, WriterT}
 #-scalaz
+
+import scala.util.{Either => SEither, Left => SLeft, Right => SRight}
 
 /** Type class for effects that can catch and handle exceptions. */
 trait MonadCatch[F[_]] extends MonadThrow[F] {
@@ -48,6 +50,43 @@ object MonadCatch extends MonadCatchInstances {
 }
 
 private[io] sealed trait MonadCatchInstances {
+  implicit def ioMonadCatchForEither: MonadCatch[Either[Throwable, ?]] =
+    new MonadCatchInstance[Lambda[(F[_], A) => Either[Throwable, A]], Any] {
+      val monad = MonadThrow.ioMonadThrowForEither
+
+      def except[A](fa: Either[Throwable, A])(handler: Throwable => Either[Throwable, A]): Either[Throwable, A] =
+        fa.recoverWith[Throwable, A] { case t => handler(t) }
+    }
+
+  implicit def ioMonadCatchForEitherT[F[_]: MonadCatch, X]: MonadCatch[EitherT[F, X, ?]] =
+    new MonadCatchInstance[EitherT[?[_], X, ?], F] {
+      val monad = MonadThrow.ioMonadThrowForEitherT[F, X]
+
+      def except[A](fa: EitherT[F, X, A])(handler: Throwable => EitherT[F, X, A]): EitherT[F, X, A] = {
+        def unwrap[G[_], Y, Z](eithert: EitherT[G, Y, Z]): G[Either[Y, Z]] =
+#+cats
+          eithert.value
+#-cats
+
+#+scalaz
+          eithert.run
+#-scalaz
+
+        EitherT(MonadCatch[F].except(unwrap(fa))(t => unwrap(handler(t))))
+      }
+    }
+
+  implicit def ioMonadCatchForSEither: MonadCatch[SEither[Throwable, ?]] =
+    new MonadCatchInstance[Lambda[(F[_], A) => SEither[Throwable, A]], Any] {
+      val monad = MonadThrow.ioMonadThrowForSEither
+
+      def except[A](fa: SEither[Throwable, A])(handler: Throwable => SEither[Throwable, A]): SEither[Throwable, A] =
+        fa match {
+          case SLeft(e)    => handler(e)
+          case r@SRight(_) => r
+        }
+    }
+
   implicit def ioMonadCatchForKleisli[F[_]: MonadCatch, X]: MonadCatch[Kleisli[F, X, ?]] =
     new MonadCatchInstance[Kleisli[?[_], X, ?], F] {
       val monad = MonadThrow.ioMonadThrowForKleisli[F, X]

@@ -2,12 +2,16 @@ package io
 
 #+cats
 import cats.{Eval, Monad, Monoid}
-import cats.data.{Kleisli, OptionT, StateT, WriterT}
+import cats.data.{Kleisli, OptionT, StateT, WriterT, Xor => Either, XorT => EitherT}
+import cats.std.either.{eitherInstances => seitherMonad}
 #-cats
 
 #+scalaz
-import scalaz.{Kleisli, OptionT, Monad, Monoid, StateT, WriterT}
+import scalaz.{\/ => Either, EitherT, Kleisli, OptionT, Monad, Monoid, StateT, WriterT}
+import scalaz.std.either.{eitherMonad => seitherMonad}
 #-scalaz
+
+import scala.util.{Either => SEither, Left => SLeft}
 
 trait MonadThrow[F[_]] extends Monad[F] {
   /** Throws an exception in the effect. */
@@ -19,6 +23,41 @@ object MonadThrow extends MonadThrowInstances {
 }
 
 private[io] sealed trait MonadThrowInstances {
+  implicit def ioMonadThrowForEither: MonadThrow[Either[Throwable, ?]] =
+    new MonadThrowInstance[Lambda[(F[_], A) => Either[Throwable, A]], Any] {
+      val monad =
+#+cats
+        Either.xorInstances[Throwable]
+#-cats
+
+#+scalaz
+        Either.DisjunctionInstances1[Throwable]
+#-scalaz
+
+      def throwM[A](e: Throwable): Either[Throwable, A] = Either.left(e)
+    }
+
+  implicit def ioMonadThrowForEitherT[F[_]: MonadThrow, X]: MonadThrow[EitherT[F, X, ?]] =
+    new MonadThrowInstance[EitherT[?[_], X, ?], F] {
+      val monad =
+#+cats
+        EitherT.xorTMonadError[F, X]
+#-cats
+
+#+scalaz
+        EitherT.eitherTMonad[F, X]
+#-scalaz
+
+      def throwM[A](e: Throwable): EitherT[F, X, A] = EitherT.left(MonadThrow[F].throwM(e))
+    }
+
+  implicit def ioMonadThrowForSEither: MonadThrow[SEither[Throwable, ?]] =
+    new MonadThrowInstance[Lambda[(F[_], A) => SEither[Throwable, A]], Any] {
+      val monad = seitherMonad[Throwable]
+
+      def throwM[A](e: Throwable): SEither[Throwable, A] = SLeft(e)
+    }
+
   implicit def ioMonadThrowForKleisli[F[_]: MonadThrow, X]: MonadThrow[Kleisli[F, X, ?]] =
     new MonadThrowInstance[Kleisli[?[_], X, ?], F] {
       val monad =
