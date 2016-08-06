@@ -5,13 +5,13 @@ import java.util.concurrent.Callable
 import scala.annotation.tailrec
 
 #+cats
-import cats.{Eval, MonadError, Show}
+import cats.{Eval, MonadError, Monoid, Show}
 import cats.data.{Xor => Either}
 import cats.data.Xor.{Left, Right}
 #-cats
 
 #+scalaz
-import scalaz.{BindRec, Catchable, MonadError, Show}
+import scalaz.{BindRec, Catchable, MonadError, Monoid, Show}
 import scalaz.{\/ => Either, -\/ => Left, \/- => Right}
 #-scalaz
 
@@ -168,6 +168,24 @@ private[io] sealed trait IOInstances {
       def liftIO[A](io: IO[A]): IO[A] = io
       override def map[A, B](fa: IO[A])(f: A => B): IO[B] = fa.map(f)
     }
+
+  implicit def ioMonoidForIO[A: Monoid]: Monoid[IO[A]] = new Monoid[IO[A]] {
+#+cats
+    def empty: IO[A] = IO.pure(Monoid[A].empty)
+    def combine(x: IO[A], y: IO[A]): IO[A] = for {
+      a <- x
+      b <- y
+    } yield Monoid[A].combine(a, b)
+#-cats
+
+#+scalaz
+    def zero: IO[A] = IO.pure(Monoid[A].zero)
+    def append(f1: IO[A], f2: => IO[A]): IO[A] = for {
+      a <- f1
+      b <- f2
+    } yield Monoid[A].append(a, b)
+#-scalaz
+  }
 }
 
 private[io] sealed trait IOFunctions {
