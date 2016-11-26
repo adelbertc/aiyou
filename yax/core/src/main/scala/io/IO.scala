@@ -14,8 +14,13 @@ import scalaz.{BindRec, Catchable, MonadError, Monoid, Show}
 import scalaz.{\/ => Either, -\/ => Left, \/- => Right}
 #-scalaz
 
-/** An IO action, when run, will produce a value of type A */
-sealed abstract class IO[A] { self =>
+/**
+ * An IO action, when run, will produce a value of type A
+ *
+ * Copied and adapted from typelevel/cats Eval.scala on November 26, 2016.
+ * https://github.com/typelevel/cats/blob/56e011005b6f603dbc8f02dab59b00641e87e4e7/core/src/main/scala/cats/Eval.scala
+ */
+sealed abstract class IO[A] extends Serializable { self =>
   /** Run this action, possible throwing an exception. Use `attempt` before calling this if you don't want to throw. */
   def unsafePerformIO(): A
 
@@ -27,6 +32,9 @@ sealed abstract class IO[A] { self =>
       case c: IO.Compute[A] =>
         new IO.Compute[B] {
           type Start = c.Start
+          // See https://issues.scala-lang.org/browse/SI-9931 for an explanation
+          // of why the type annotations are necessary in these two lines on
+          // Scala 2.12.0.
           val start: () => IO[Start] = c.start
           val run: Start => IO[B] = (s: c.Start) =>
             new IO.Compute[B] {
@@ -90,15 +98,15 @@ object IO extends IOInstances with IOFunctions {
 
   private final case class Pure[A](unsafePerformIO: A) extends IO[A]
 
-  private final class Primitive[A](f: () => A) extends IO[A] {
-    def unsafePerformIO: A = f()
+  private final class Primitive[A](val thunk: () => A) extends IO[A] {
+    def unsafePerformIO(): A = thunk()
   }
-
   private sealed abstract class Compute[A] extends IO[A] {
     type Start
     val start: () => IO[Start]
     val run: Start => IO[A]
-    def unsafePerformIO: A = {
+
+    def unsafePerformIO(): A = {
       type L = IO[Any]
       type C = Any => IO[Any]
       @tailrec def loop(curr: L, fs: List[C]): Any =
@@ -110,18 +118,17 @@ object IO extends IOInstances with IOFunctions {
                   cc.start().asInstanceOf[L],
                   cc.run.asInstanceOf[C] :: c.run.asInstanceOf[C] :: fs)
               case xx =>
-                loop(c.run(xx.unsafePerformIO).asInstanceOf[L], fs)
+                loop(c.run(xx.unsafePerformIO()), fs)
             }
           case x =>
             fs match {
-              case f :: fs => loop(f(x.unsafePerformIO), fs)
-              case Nil => x.unsafePerformIO
+              case f :: fs => loop(f(x.unsafePerformIO()), fs)
+              case Nil => x.unsafePerformIO()
             }
         }
       loop(this.asInstanceOf[L], Nil).asInstanceOf[A]
     }
   }
-
 }
 
 private[aiyou] sealed trait IOInstances {
