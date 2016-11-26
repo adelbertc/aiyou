@@ -1,4 +1,4 @@
-package io
+package aiyou
 
 #+cats
 import cats.{Monad, MonadError, Monoid}
@@ -11,7 +11,7 @@ import scalaz.{\/, -\/ => Left, \/- => Right, EitherT, Kleisli, Monad, MonadErro
 import scalaz.Scalaz._
 #-scalaz
 
-private[io] trait OrphanInstances {
+private[aiyou] trait OrphanInstances {
   //////////////////////
   // Either instances //
   //////////////////////
@@ -149,12 +149,12 @@ private[io] trait OrphanInstances {
 // Template traits //
 /////////////////////
 
-private[io] trait EitherTMonadThrow[F[_], X] extends MonadThrowInductive[EitherT[?[_], X, ?], F] {
+private[aiyou] trait EitherTMonadThrow[F[_], X] extends MonadThrowInductive[EitherT[?[_], X, ?], F] {
   def monad = Monad[EitherT[F, X, ?]]
   def throwM[A](e: Throwable): EitherT[F, X, A] = EitherT.left(monadThrowF.throwM(e))
 }
 
-private[io] trait EitherTMonadCatch[F[_], X] extends MonadCatchInductive[EitherT[?[_], X, ?], F] with EitherTMonadThrow[F, X] {
+private[aiyou] trait EitherTMonadCatch[F[_], X] extends MonadCatchInductive[EitherT[?[_], X, ?], F] with EitherTMonadThrow[F, X] {
   def catchM[A](fa: EitherT[F, X, A])(handler: Throwable => EitherT[F, X, A]): EitherT[F, X, A] = {
 #+cats
     def unwrap[G[_], Y, Z](eithert: EitherT[G, Y, Z]): G[Either[Y, Z]] =
@@ -170,22 +170,22 @@ private[io] trait EitherTMonadCatch[F[_], X] extends MonadCatchInductive[EitherT
   }
 }
 
-private[io] trait KleisliMonadThrow[F[_], X] extends MonadThrowInductive[Kleisli[?[_], X, ?], F] {
+private[aiyou] trait KleisliMonadThrow[F[_], X] extends MonadThrowInductive[Kleisli[?[_], X, ?], F] {
   def monad = Monad[Kleisli[F, X, ?]]
   def throwM[A](e: Throwable): Kleisli[F, X, A] = Kleisli(_ => monadThrowF.throwM(e))
 }
 
-private[io] trait KleisliMonadCatch[F[_], X] extends MonadCatchInductive[Kleisli[?[_], X, ?], F] with KleisliMonadThrow[F, X] {
+private[aiyou] trait KleisliMonadCatch[F[_], X] extends MonadCatchInductive[Kleisli[?[_], X, ?], F] with KleisliMonadThrow[F, X] {
   def catchM[A](fa: Kleisli[F, X, A])(handler: Throwable => Kleisli[F, X, A]): Kleisli[F, X, A] =
     Kleisli((x: X) => monadCatchF.catchM(fa.run(x))(t => handler(t).run(x)))
 }
 
-private[io] trait OptionTMonadThrow[F[_]] extends MonadThrowInductive[OptionT, F] {
+private[aiyou] trait OptionTMonadThrow[F[_]] extends MonadThrowInductive[OptionT, F] {
   def monad = Monad[OptionT[F, ?]]
   def throwM[A](e: Throwable): OptionT[F, A] = OptionT(monadThrowF.throwM(e))
 }
 
-private[io] trait OptionTMonadCatch[F[_]] extends MonadCatchInductive[OptionT, F] with OptionTMonadThrow[F] {
+private[aiyou] trait OptionTMonadCatch[F[_]] extends MonadCatchInductive[OptionT, F] with OptionTMonadThrow[F] {
   def catchM[A](fa: OptionT[F, A])(handler: Throwable => OptionT[F, A]): OptionT[F, A] = {
     def unwrap[G[_], Y](optiont: OptionT[G, Y]): G[Option[Y]] =
 #+cats
@@ -199,33 +199,33 @@ private[io] trait OptionTMonadCatch[F[_]] extends MonadCatchInductive[OptionT, F
   }
 }
 
-private[io] trait StateTMonadThrow[F[_], X] extends MonadThrowInductive[StateT[?[_], X, ?], F] {
+private[aiyou] trait StateTMonadThrow[F[_], X] extends MonadThrowInductive[StateT[?[_], X, ?], F] {
   def monad = Monad[StateT[F, X, ?]]
   def throwM[A](e: Throwable): StateT[F, X, A] = StateT(_ => monadThrowF.throwM(e))
 }
 
-private[io] trait StateTMonadCatch[F[_], X] extends MonadCatchInductive[StateT[?[_], X, ?], F] with StateTMonadThrow[F, X] {
+private[aiyou] trait StateTMonadCatch[F[_], X] extends MonadCatchInductive[StateT[?[_], X, ?], F] with StateTMonadThrow[F, X] {
   def catchM[A](fa: StateT[F, X, A])(handler: Throwable => StateT[F, X, A]): StateT[F, X, A] =
     StateT(x => monadCatchF.catchM(fa.run(x))(t => handler(t).run(x)))
 }
 
-private[io] trait WriterTMonadThrow[F[_], X] extends MonadThrowInductive[WriterT[?[_], X, ?], F] {
+private[aiyou] trait WriterTMonadThrow[F[_], X] extends MonadThrowInductive[WriterT[?[_], X, ?], F] {
   implicit def monoidX: Monoid[X]
   def monad = Monad[WriterT[F, X, ?]]
   def throwM[A](e: Throwable): WriterT[F, X, A] = WriterT(monadThrowF.throwM(e))
 }
 
-private[io] trait WriterTMonadCatch[F[_], X] extends MonadCatchInductive[WriterT[?[_], X, ?], F] with WriterTMonadThrow[F, X] {
+private[aiyou] trait WriterTMonadCatch[F[_], X] extends MonadCatchInductive[WriterT[?[_], X, ?], F] with WriterTMonadThrow[F, X] {
   def catchM[A](fa: WriterT[F, X, A])(handler: Throwable => WriterT[F, X, A]): WriterT[F, X, A] =
     WriterT(monadCatchF.catchM(fa.run)(t => handler(t).run))
 }
 
-private[io] trait MonadThrowInductive[MT[_[_], _], F[_]] extends MonadThrowClass[MT[F, ?]] {
+private[aiyou] trait MonadThrowInductive[MT[_[_], _], F[_]] extends MonadThrowClass[MT[F, ?]] {
   def monadThrowF: MonadThrow[F]
   implicit def monadF: Monad[F] = monadThrowF.monad
 }
 
-private[io] trait MonadCatchInductive[MT[_[_], _], F[_]] extends MonadCatchClass[MT[F, ?]] with MonadThrowInductive[MT, F] {
+private[aiyou] trait MonadCatchInductive[MT[_[_], _], F[_]] extends MonadCatchClass[MT[F, ?]] with MonadThrowInductive[MT, F] {
   def monadCatchF: MonadCatch[F]
   def monadThrowF = monadCatchF.monadThrow
 }

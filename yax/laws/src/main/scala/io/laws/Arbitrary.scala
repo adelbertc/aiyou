@@ -1,4 +1,4 @@
-package io
+package aiyou
 package laws
 
 import org.scalacheck.Arbitrary

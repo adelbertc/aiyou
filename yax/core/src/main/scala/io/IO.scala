@@ -1,4 +1,4 @@
-package io
+package aiyou
 
 import java.util.concurrent.Callable
 
@@ -124,7 +124,7 @@ object IO extends IOInstances with IOFunctions {
 
 }
 
-private[io] sealed trait IOInstances {
+private[aiyou] sealed trait IOInstances {
 #+scalaz
   implicit val ioInstancesForIO:
         BindRec[IO] with Catchable[IO] with MonadCatchClass[IO] with MonadError[IO, Throwable] with MonadIOClass[IO] =
@@ -189,7 +189,7 @@ private[io] sealed trait IOInstances {
   }
 }
 
-private[io] sealed trait IOFunctions {
+private[aiyou] sealed trait IOFunctions {
   def print(s: String): IO[Unit] = IO.primitive {
     Predef.print(s)
     ()

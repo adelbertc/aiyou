@@ -1,4 +1,4 @@
-package io
+package aiyou
 
 #+cats
 import cats.Monad

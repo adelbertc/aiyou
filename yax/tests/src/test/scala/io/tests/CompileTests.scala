@@ -1,4 +1,4 @@
-package io.laws
+package aiyou
 
 #+cats
 import cats.Monad
@@ -9,8 +9,7 @@ import cats.data.OptionT
 import scalaz.{Monad, OptionT}
 #-scalaz
 
-import io._
-import io.implicits._
+import aiyou.implicits._
 
 object CompileTests {
   val mockIO: IO[Int] = IO.pure(5)

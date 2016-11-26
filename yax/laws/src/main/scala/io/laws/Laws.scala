@@ -1,4 +1,4 @@
-package io
+package aiyou
 package laws
 
 #+cats
@@ -9,9 +9,9 @@ import cats.{Eq, Monad}
 import scalaz.{Equal => Eq, Monad}
 #-scalaz
 
-import io.implicits._
-import io.laws.arbitrary._
-import io.laws.eq.checkEq
+import aiyou.implicits._
+import aiyou.laws.arbitrary._
+import aiyou.laws.eq.checkEq
 
 import org.scalacheck.{Arbitrary, Cogen, Prop, Properties}
 import org.scalacheck.Prop.forAll

@@ -1,14 +1,18 @@
-# io
+# aiyou
 
 [![Travis CI](https://travis-ci.org/adelbertc/io.svg?branch=master)](https://travis-ci.org/adelbertc/io)
 
-IO types and classes for Scala.
+### Origin
+ǎi you is a romanized spelling of the Chinese phrase 哎呦, which is onomatopoeic for the sound
+made when surprised, as is the case when programming with side effects.
+
+aiyou provides IO types and classes for Scala.
 
 ```scala
 import cats.data.Kleisli
 import cats.implicits._
-import io._
-import io.implicits._
+import aiyou._
+import aiyou.implicits._
 
 object MyApp extends SafeApp {
   def ioAction: IO[Int] = for {
@@ -27,14 +31,14 @@ object MyApp extends SafeApp {
 }
 ```
 
-The **io** project and contributors support the
+The **aiyou** project and contributors support the
 [Typelevel](http://typelevel.org/) [Code of Conduct](http://typelevel.org/conduct.html) and want all its
 associated channels to be a safe and friendly environment for contributing and learning.
 
 ## Quick Start
-**io** is natively built against Scala 2.10.x, Scala 2.11.x, 2.12.x, Cats 0.8.1, and Scalaz 7.2.x.
+**aiyou** is natively built against Scala 2.10.x, Scala 2.11.x, 2.12.x, Cats 0.8.1, and Scalaz 7.2.x.
 
-The modules of **io** are (append `-cats` or `-scalaz` to get the full module name for the corresponding environment):
+The modules of **aiyou** are (append `-cats` or `-scalaz` to get the full module name for the corresponding environment):
 
 * `core`: IO related types and classes
 * `laws`: laws for the type classes

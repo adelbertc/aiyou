@@ -48,12 +48,12 @@ lazy val publishSettings = List(
       Some("releases"  at nexus + "service/local/staging/deploy/maven2")
   },
   publishArtifact in Test := false,
-  homepage := Some(url("https://github.com/adelbertc/io")),
+  homepage := Some(url("https://github.com/adelbertc/aiyou")),
   pomIncludeRepository := Function.const(false),
   pomExtra := (
     <scm>
-      <url>git@github.com:adelbert/io.git</url>
-      <connection>scm:git:git@github.com:adelbertc/io.git</connection>
+      <url>git@github.com:adelbert/aiyou.git</url>
+      <connection>scm:git:git@github.com:adelbertc/aiyou.git</connection>
     </scm>
     <developers>
       <developer>
@@ -91,7 +91,7 @@ lazy val noPublishSettings = List(
   publishArtifact := false
 )
 
-lazy val io = project.in(file("."))
+lazy val aiyou = project.in(file("."))
   .settings(buildSettings ++ commonSettings)
   .settings(noPublishSettings)
   .settings(unidocSettings)
