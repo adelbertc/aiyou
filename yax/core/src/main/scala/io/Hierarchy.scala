@@ -8,7 +8,7 @@ import cats.Monad
 import scalaz.Monad
 #-scalaz
 
-class Hierarchy extends Hierarchy.H0
+trait Hierarchy extends Hierarchy.H0
 
 object Hierarchy {
   trait H0 extends H1 {

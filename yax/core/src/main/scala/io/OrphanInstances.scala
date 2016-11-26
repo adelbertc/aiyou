@@ -11,7 +11,7 @@ import scalaz.{\/, -\/ => Left, \/- => Right, EitherT, Kleisli, Monad, MonadErro
 import scalaz.Scalaz._
 #-scalaz
 
-private[aiyou] trait OrphanInstances {
+trait OrphanInstances {
   //////////////////////
   // Either instances //
   //////////////////////
