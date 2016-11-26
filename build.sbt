@@ -34,7 +34,7 @@ lazy val commonSettings = List(
     "-Ywarn-value-discard"
   ) ++ scalaVersionFlags(scalaVersion.value),
   scalacOptions in (Compile, console) ~= { _.filterNot(disabledReplOptions.contains(_)) },
-  scalacOptions in (Test, console) <<= (scalacOptions in (Compile, console)),
+  scalacOptions in (Test, console) := (scalacOptions in (Compile, console)).value,
   libraryDependencies ++= scalaVersionDeps(scalaVersion.value)
 )
 
