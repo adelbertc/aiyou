@@ -4,8 +4,8 @@
 [![Travis CI](https://travis-ci.org/adelbertc/aiyou.svg?branch=master)](https://travis-ci.org/adelbertc/aiyou)
 
 ### Origin
-ǎi you is a romanized spelling of the Chinese phrase 哎呦, which is onomatopoeic for the sound
-made when surprised, as is the case when programming with side effects.
+ǎi you (pronounced like ai-yo) is a romanized spelling of the Chinese phrase 哎呦, which is onomatopoeic for the sound
+made when surprised, as is often the case when programming with side effects.
 
 aiyou provides IO types and classes for Scala.
 
