@@ -8,6 +8,7 @@ IO types and classes for Scala.
 import cats.data.Kleisli
 import cats.implicits._
 import io._
+import io.implicits._
 
 object MyApp extends SafeApp {
   def ioAction: IO[Int] = for {
@@ -31,7 +32,7 @@ The **io** project and contributors support the
 associated channels to be a safe and friendly environment for contributing and learning.
 
 ## Quick Start
-**io** is natively built against Scala 2.10.x, Scala 2.11.x, Cats 0.6.1, and Scalaz 7.2.x.
+**io** is natively built against Scala 2.10.x, Scala 2.11.x, 2.12.x, Cats 0.8.1, and Scalaz 7.2.x.
 
 The modules of **io** are (append `-cats` or `-scalaz` to get the full module name for the corresponding environment):
 
