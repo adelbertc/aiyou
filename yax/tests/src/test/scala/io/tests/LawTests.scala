@@ -1,6 +1,7 @@
 package io
 package tests
 
+import io.implicits._
 import io.laws.arbitrary._
 import io.laws.eq._
 import io.laws.laws._
@@ -9,12 +10,12 @@ import org.scalacheck.{Arbitrary, Properties}
 import org.specs2.{ScalaCheck, Specification}
 import org.specs2.specification.core.Fragments
 
-import scala.util.{Either => SEither, Random}
+import scala.util.Random
 
 #+cats
 import cats.Eq
 import cats.Applicative
-import cats.data.{Kleisli, OptionT, StateT, WriterT, Xor => Either, XorT => EitherT}
+import cats.data.{EitherT, Kleisli, OptionT, StateT, WriterT}
 import cats.kernel.laws.GroupLaws
 import cats.implicits._
 import cats.laws.discipline.MonadErrorTests
@@ -25,7 +26,7 @@ class LawTests extends Specification with ScalaCheck with Discipline {
 #-cats
 
 #+scalaz
-import scalaz.{\/ => Either, EitherT, Equal => Eq, Kleisli, OptionT, StateT, WriterT}
+import scalaz.{\/, EitherT, Equal => Eq, Kleisli, OptionT, StateT, WriterT}
 import scalaz.Scalaz._
 import scalaz.scalacheck.ScalazArbitrary._
 import scalaz.scalacheck.ScalazProperties.{monadError, monoid}
@@ -42,12 +43,14 @@ class LawTests extends Specification with ScalaCheck {
   Either
     monadCatch  ${eitherMonadCatch}
 
+#+scalaz
+  \/
+    monadCatch  ${disjMonadCatch}
+#-scalaz
+
   EitherT
     monadIO     ${eitherTMonadIO}
     monadCatch  ${eitherTMonadCatch}
-
-  scala.util.Either
-    monadCatch  ${seitherMonadCatch}
 
   Kleisli
     monadIO     ${kleisliMonadIO}
@@ -72,7 +75,7 @@ class LawTests extends Specification with ScalaCheck {
 #-cats
 
 #+scalaz
-    properties(monadError.laws[IO, Throwable])
+    mkProp(monadError.laws[IO, Throwable])
 #-scalaz
 
   def ioMonadIO = monadIOTestsFor[IO]
@@ -85,16 +88,18 @@ class LawTests extends Specification with ScalaCheck {
 #-cats
 
 #+scalaz
-    properties(monoid.laws[IO[Int]])
+    mkProp(monoid.laws[IO[Int]])
 #-scalaz
 
   def eitherMonadCatch = monadCatchTestsFor[Either[Throwable, ?]]
 
+#+scalaz
+  def disjMonadCatch = monadCatchTestsFor[\/[Throwable, ?]]
+#-scalaz
+
   def eitherTMonadIO = monadIOTestsFor[EitherT[IO, Int, ?]]
 
   def eitherTMonadCatch = monadCatchTestsFor[EitherT[IO, Int, ?]]
-
-  def seitherMonadCatch = monadCatchTestsFor[SEither[Throwable, ?]]
 
   implicit def ioTestsEqForKleisliIOInt[A: Eq]: Eq[Kleisli[IO, Int, A]] =
     eqBy[Kleisli[IO, Int, A], Int => IO[A]](_.run)
@@ -124,12 +129,12 @@ class LawTests extends Specification with ScalaCheck {
   def writerTMonadCatch = monadCatchTestsFor[WriterT[IO, Int, ?]]
 
   def monadIOTestsFor[F[_]](implicit FEI: Eq[F[Int]], FES: Eq[F[String]], FM: MonadIO[F]) =
-    properties(monadIO.laws[F, Int, String])
+    mkProp(monadIO.laws[F, Int, String])
 
   def monadCatchTestsFor[F[_]](implicit FA: Arbitrary[F[Int]], FE: Eq[F[Int]], FM: MonadCatch[F]) =
-    properties(monadCatch.laws[F, Int])
+    mkProp(monadCatch.laws[F, Int])
 
-  def properties(ps: Properties): Fragments =
+  def mkProp(ps: Properties): Fragments =
     Fragments(fragmentFactory.tab) append Fragments.foreach(ps.properties) {
       case (name, prop) => Fragments(fragmentFactory.break, fragmentFactory.example(name, prop))
     }

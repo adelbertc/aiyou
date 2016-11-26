@@ -5,9 +5,8 @@ import java.util.concurrent.Callable
 import scala.annotation.tailrec
 
 #+cats
-import cats.{Eval, MonadError, Monoid, Show}
-import cats.data.{Xor => Either}
-import cats.data.Xor.{Left, Right}
+import cats.{MonadError, Monoid, Show}
+import cats.implicits._
 #-cats
 
 #+scalaz
@@ -28,8 +27,8 @@ sealed abstract class IO[A] { self =>
       case c: IO.Compute[A] =>
         new IO.Compute[B] {
           type Start = c.Start
-          val start = c.start
-          val run = (s: c.Start) =>
+          val start: () => IO[Start] = c.start
+          val run: Start => IO[B] = (s: c.Start) =>
             new IO.Compute[B] {
               type Start = A
               val start = () => c.run(s)
@@ -128,23 +127,20 @@ object IO extends IOInstances with IOFunctions {
 private[io] sealed trait IOInstances {
 #+scalaz
   implicit val ioInstancesForIO:
-        BindRec[IO] with Catchable[IO] with MonadCatch[IO] with MonadError[IO, Throwable] with MonadIO[IO] =
-    new BindRec[IO] with Catchable[IO] with MonadCatch[IO] with MonadError[IO, Throwable] with MonadIO[IO] {
+        BindRec[IO] with Catchable[IO] with MonadCatchClass[IO] with MonadError[IO, Throwable] with MonadIOClass[IO] =
+    new BindRec[IO] with Catchable[IO] with MonadCatchClass[IO] with MonadError[IO, Throwable] with MonadIOClass[IO] { outer =>
 #-scalaz
 
 #+cats
-  implicit val ioInstancesForIO: MonadCatch[IO] with MonadError[IO, Throwable] with MonadIO[IO] =
-    new MonadCatch[IO] with MonadError[IO, Throwable] with MonadIO[IO] {
+  implicit val ioInstancesForIO: MonadCatchClass[IO] with MonadError[IO, Throwable] with MonadIOClass[IO] =
+    new MonadCatchClass[IO] with MonadError[IO, Throwable] with MonadIOClass[IO] { outer =>
+      def tailRecM[A, B](a: A)(f: A => IO[Either[A, B]]): IO[B] = tailrecm(a)(f)
       def flatMap[A, B](fa: IO[A])(f: A => IO[B]): IO[B] = fa.flatMap(f)
       def pure[A](a: A): IO[A] = IO.pure(a)
 #-cats
 
 #+scalaz
-      def tailrecM[A, B](f: A => IO[Either[A, B]])(a: A): IO[B] =
-        f(a).flatMap(_ match {
-          case Left(a)  => tailrecM(f)(a) // OK because trampoline
-          case Right(b) => IO.pure(b)
-        })
+      def tailrecM[A, B](f: A => IO[Either[A, B]])(a: A): IO[B] = tailrecm(a)(f)
       def attempt[A](fa: IO[A]): IO[Either[Throwable, A]] = fa.attempt
       def fail[A](t: Throwable): IO[A] = IO.fail(t)
       def bind[A, B](fa: IO[A])(f: A => IO[B]): IO[B] = fa.flatMap(f)
@@ -161,10 +157,15 @@ private[io] sealed trait IOInstances {
 
         catchM(fa)(f)
 
+      val monad = outer
+      def tailrecm[A, B](a: A)(f: A => IO[Either[A, B]]): IO[B] =
+        f(a).flatMap(_ match {
+          case Left(a)  => tailrecm(a)(f) // OK because trampoline
+          case Right(b) => IO.pure(b)
+        })
+      def throwM[A](e: Throwable): IO[A] = IO.fail(e)
       def raiseError[A](e: Throwable): IO[A] = IO.fail(e)
-
       def catchM[A](fa: IO[A])(handler: Throwable => IO[A]): IO[A] = fa.catchM(handler)
-      def throwM[A](throwable: Throwable): IO[A] = IO.fail(throwable)
       def liftIO[A](io: IO[A]): IO[A] = io
       override def map[A, B](fa: IO[A])(f: A => B): IO[B] = fa.map(f)
     }
