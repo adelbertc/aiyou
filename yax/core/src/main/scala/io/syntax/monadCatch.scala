@@ -1,4 +1,4 @@
-package io
+package aiyou
 package syntax
 
 trait MonadCatchSyntax {

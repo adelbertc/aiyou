@@ -1,4 +1,4 @@
-package io
+package aiyou
 
 /** Type class for effects that can catch and handle exceptions. */
 trait MonadCatch[F[_]] {

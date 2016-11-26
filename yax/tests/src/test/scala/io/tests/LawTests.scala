@@ -1,10 +1,10 @@
-package io
+package aiyou
 package tests
 
-import io.implicits._
-import io.laws.arbitrary._
-import io.laws.eq._
-import io.laws.laws._
+import aiyou.implicits._
+import aiyou.laws.arbitrary._
+import aiyou.laws.eq._
+import aiyou.laws.laws._
 
 import org.scalacheck.{Arbitrary, Properties}
 import org.specs2.{ScalaCheck, Specification}

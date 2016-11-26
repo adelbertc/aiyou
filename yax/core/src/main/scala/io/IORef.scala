@@ -1,4 +1,4 @@
-package io
+package aiyou
 
 /** A mutable reference protected by [[IO]]. */
 final class IORef[A] private(@volatile protected var value: A) {
