@@ -45,6 +45,8 @@ The modules of **aiyou** are (append `-cats` or `-scalaz` to get the full module
 * `laws`: laws for the type classes
 
 ```scala
+resolvers += Resolver.sonatypeRepo("snapshots")
+
 // Cats
 "io.github.adelbertc" %% "aiyou-core-cats" % "0.1.0-SNAPSHOT"
 "io.github.adelbertc" %% "aiyou-laws-cats" % "0.1.0-SNAPSHOT"
