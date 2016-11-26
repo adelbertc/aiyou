@@ -2,13 +2,14 @@ package io
 package laws
 
 #+cats
-import cats.{Eq, Eval, Monad}
+import cats.{Eq, Monad}
 #-cats
 
 #+scalaz
 import scalaz.{Equal => Eq, Monad}
 #-scalaz
 
+import io.implicits._
 import io.laws.arbitrary._
 import io.laws.eq.checkEq
 
@@ -34,7 +35,7 @@ object laws {
   object monadIO {
     def pure[F[_], A](implicit FAE: Eq[F[A]], FM: MonadIO[F], A: Arbitrary[A]): Prop = forAll { (a: A) =>
       val got = FM.liftIO(IO.pure(a))
-      val expected = FM.pure(a)
+      val expected = FM.monad.pure(a)
       checkEq(got, expected)
     }
 
@@ -70,7 +71,7 @@ object laws {
   object monadCatch {
     def catchM[F[_], A](implicit FAA: Arbitrary[F[A]], FAE: Eq[F[A]], FM: MonadCatch[F]): Prop =
       forAll { (e: Throwable, f: Throwable => F[A]) =>
-        checkEq(FM.catchM(FM.throwM[A](e))(f), f(e))
+        checkEq(FM.catchM(FM.monadThrow.throwM[A](e))(f), f(e))
       }
 
     def laws[F[_], A](implicit FAA: Arbitrary[F[A]], FAE: Eq[F[A]], FM: MonadCatch[F]): Properties =

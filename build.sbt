@@ -1,18 +1,20 @@
 import UnidocKeys._
 import ReleaseTransformations._
 
-val catsVersion = "0.6.1"
-val scalazVersion = "7.2.4"
+val catsVersion = "0.8.1"
+val scalazVersion = "7.2.7"
+
+val disabledReplOptions = Set("-Ywarn-unused-import")
 
 lazy val buildSettings = List(
-  organization := "org.tpolecat",
+  organization := "io.github.adelbertc",
   licenses ++= List(
     ("MIT", url("http://opensource.org/licenses/MIT")),
     ("BSD New", url("http://opensource.org/licenses/BSD-3-Clause"))
   ),
-  scalaVersion := "2.11.8",
-  crossScalaVersions := List("2.10.6", scalaVersion.value),
-  addCompilerPlugin("org.spire-math" % "kind-projector" % "0.8.0" cross CrossVersion.binary)
+  scalaVersion := "2.12.0",
+  crossScalaVersions := List("2.10.6", "2.11.8", scalaVersion.value),
+  addCompilerPlugin("org.spire-math" % "kind-projector" % "0.9.3" cross CrossVersion.binary)
 )
 
 lazy val commonSettings = List(
@@ -28,12 +30,12 @@ lazy val commonSettings = List(
     "-Xlint",
     "-Yno-adapted-args",
     "-Ywarn-dead-code",
+    "-Ywarn-numeric-widen",
     "-Ywarn-value-discard"
-  ),
-  scalacOptions in compile ++= List(
-    "-Yno-imports",
-    "-Ywarn-numeric-widen"
-  )
+  ) ++ scalaVersionFlags(scalaVersion.value),
+  scalacOptions in (Compile, console) ~= { _.filterNot(disabledReplOptions.contains(_)) },
+  scalacOptions in (Test, console) <<= (scalacOptions in (Compile, console)),
+  libraryDependencies ++= scalaVersionDeps(scalaVersion.value)
 )
 
 lazy val publishSettings = List(
@@ -46,18 +48,23 @@ lazy val publishSettings = List(
       Some("releases"  at nexus + "service/local/staging/deploy/maven2")
   },
   publishArtifact in Test := false,
-  homepage := Some(url("https://github.com/tpolecat/io")),
+  homepage := Some(url("https://github.com/adelbertc/io")),
   pomIncludeRepository := Function.const(false),
   pomExtra := (
     <scm>
-      <url>git@github.com:tpolecat/tut.git</url>
-      <connection>scm:git:git@github.com:tpolecat/tut.git</connection>
+      <url>git@github.com:adelbert/io.git</url>
+      <connection>scm:git:git@github.com:adelbertc/io.git</connection>
     </scm>
     <developers>
       <developer>
         <id>tpolecat</id>
         <name>Rob Norris</name>
         <url>http://tpolecat.org</url>
+      </developer>
+      <developer>
+        <id>adelbertc</id>
+        <name>Adelbert Chang</name>
+        <url>https://github.com/adelbertc/</url>
       </developer>
     </developers>
   ),
@@ -113,15 +120,17 @@ lazy val laws_cats = project.in(file("laws-cats"))
     )
   )
 
+val specs2Version = "3.8.6"
+
 lazy val tests_cats = project.in(file("tests-cats"))
   .dependsOn(core_cats, laws_cats)
   .settings(
     yax(file("yax/tests"), "cats"),
     buildSettings ++ commonSettings,
     libraryDependencies ++= List(
-      "org.typelevel"   %% "discipline"         % "0.5"     % "test",
-      "org.specs2"      %% "specs2-core"        % "3.6.6"   % "test",
-      "org.specs2"      %% "specs2-scalacheck"  % "3.6.6"   % "test"
+      "org.typelevel"   %% "discipline"         % "0.7.1"       % "test",
+      "org.specs2"      %% "specs2-core"        % specs2Version % "test",
+      "org.specs2"      %% "specs2-scalacheck"  % specs2Version % "test"
     )
   )
 
@@ -142,8 +151,8 @@ lazy val laws_scalaz = project.in(file("laws-scalaz"))
     yax(file("yax/laws"), "scalaz"),
     buildSettings ++ commonSettings ++ publishSettings,
     libraryDependencies ++= List(
-      "org.scalaz"      %% "scalaz-scalacheck-binding"  % scalazVersion,
-      "org.scalacheck"  %% "scalacheck"                 % "1.12.5"
+      "org.scalaz"      %% "scalaz-scalacheck-binding" % (scalazVersion ++ "-scalacheck-1.13"),
+      "org.scalacheck"  %% "scalacheck"                % "1.13.4"
     )
   )
 
@@ -153,7 +162,22 @@ lazy val tests_scalaz = project.in(file("tests-scalaz"))
     yax(file("yax/tests"), "scalaz"),
     buildSettings ++ commonSettings,
     libraryDependencies ++= List(
-      "org.specs2"  %% "specs2-core"        % "3.7"  % "test",
-      "org.specs2"  %% "specs2-scalacheck"  % "3.7"  % "test"
+      "org.specs2"  %% "specs2-core"        % specs2Version  % "test",
+      "org.specs2"  %% "specs2-scalacheck"  % specs2Version  % "test"
     )
   )
+
+
+def scalaVersionFlags(version: String): List[String] = CrossVersion.partialVersion(version) match {
+  case Some((2, 10)) => List.empty
+  case Some((2, 11)) => List("-Ywarn-unused-import")
+  case Some((2, 12)) => List("-Ypartial-unification", "-Ywarn-unused-import")
+  case _             => List.empty
+}
+
+def scalaVersionDeps(version: String): List[ModuleID] = CrossVersion.partialVersion(version) match {
+  case Some((2, 10)) => List(compilerPlugin("com.milessabin" % "si2712fix-plugin_2.10.6" % "1.2.0"))
+  case Some((2, 11)) => List(compilerPlugin("com.milessabin" % "si2712fix-plugin_2.11.8" % "1.2.0"))
+  case Some((2, 12)) => List.empty
+  case _             => List.empty
+}

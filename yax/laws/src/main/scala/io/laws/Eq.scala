@@ -2,13 +2,12 @@ package io
 package laws
 
 #+cats
-import cats.data.{Xor => Either}
-import cats.data.Xor.{Left, Right}
 import cats.kernel.Eq
 #-cats
 
 #+scalaz
-import scalaz.{\/ => Either, -\/ => Left, \/- => Right, Equal => Eq}
+import scalaz.{Equal => Eq}
+import scalaz.{-\/ => Left, \/- => Right}
 #-scalaz
 
 object eq {
