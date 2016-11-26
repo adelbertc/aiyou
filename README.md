@@ -1,7 +1,7 @@
 # aiyou
 
 [![Gitter chat](https://badges.gitter.im/adelbertc/aiyou.svg)](https://gitter.im/adelbertc/aiyou?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![Travis CI](https://travis-ci.org/adelbertc/io.svg?branch=master)](https://travis-ci.org/adelbertc/io)
+[![Travis CI](https://travis-ci.org/adelbertc/aiyou.svg?branch=master)](https://travis-ci.org/adelbertc/aiyou)
 
 ### Origin
 ǎi you is a romanized spelling of the Chinese phrase 哎呦, which is onomatopoeic for the sound
