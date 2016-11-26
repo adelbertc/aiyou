@@ -1,7 +1,6 @@
 # aiyou
 
-[![Join the chat at https://gitter.im/adelbertc/aiyou](https://badges.gitter.im/adelbertc/aiyou.svg)](https://gitter.im/adelbertc/aiyou?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-
+[![Gitter chat](https://badges.gitter.im/adelbertc/aiyou.svg)](https://gitter.im/adelbertc/aiyou?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Travis CI](https://travis-ci.org/adelbertc/io.svg?branch=master)](https://travis-ci.org/adelbertc/io)
 
 ### Origin
