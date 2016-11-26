@@ -38,6 +38,8 @@ lazy val commonSettings = List(
   libraryDependencies ++= scalaVersionDeps(scalaVersion.value)
 )
 
+lazy val aiyouSettings = buildSettings ++ commonSettings
+
 lazy val publishSettings = List(
   publishMavenStyle := true,
   publishTo := {
@@ -100,9 +102,9 @@ lazy val aiyou = project.in(file("."))
 
 lazy val core_cats = project.in(file("core-cats"))
   .settings(
-    name := "core-cats",
+    name := "aiyou-core-cats",
     yax(file("yax/core"), "cats"),
-    buildSettings ++ commonSettings ++ publishSettings,
+    aiyouSettings ++ publishSettings,
     libraryDependencies ++= List(
       "org.typelevel" %% "cats-core" % catsVersion
     )
@@ -111,9 +113,9 @@ lazy val core_cats = project.in(file("core-cats"))
 lazy val laws_cats = project.in(file("laws-cats"))
   .dependsOn(core_cats)
   .settings(
-    name := "laws-cats",
+    name := "aiyou-laws-cats",
     yax(file("yax/laws"), "cats"),
-    buildSettings ++ commonSettings ++ publishSettings,
+    aiyouSettings ++ publishSettings,
     libraryDependencies ++= List(
       "org.typelevel"   %% "cats-laws"  % catsVersion,
       "org.scalacheck"  %% "scalacheck" % "1.12.5"
@@ -126,7 +128,7 @@ lazy val tests_cats = project.in(file("tests-cats"))
   .dependsOn(core_cats, laws_cats)
   .settings(
     yax(file("yax/tests"), "cats"),
-    buildSettings ++ commonSettings,
+    aiyouSettings ++ noPublishSettings,
     libraryDependencies ++= List(
       "org.typelevel"   %% "discipline"         % "0.7.1"       % "test",
       "org.specs2"      %% "specs2-core"        % specs2Version % "test",
@@ -136,9 +138,9 @@ lazy val tests_cats = project.in(file("tests-cats"))
 
 lazy val core_scalaz = project.in(file("core-scalaz"))
   .settings(
-    name := "core-scalaz",
+    name := "aiyou-core-scalaz",
     yax(file("yax/core"), "scalaz"),
-    buildSettings ++ commonSettings ++ publishSettings,
+    aiyouSettings ++ publishSettings,
     libraryDependencies ++= List(
       "org.scalaz"  %% "scalaz-core"  % scalazVersion
     )
@@ -147,9 +149,9 @@ lazy val core_scalaz = project.in(file("core-scalaz"))
 lazy val laws_scalaz = project.in(file("laws-scalaz"))
   .dependsOn(core_scalaz)
   .settings(
-    name := "laws-scalaz",
+    name := "aiyou-laws-scalaz",
     yax(file("yax/laws"), "scalaz"),
-    buildSettings ++ commonSettings ++ publishSettings,
+    aiyouSettings ++ publishSettings,
     libraryDependencies ++= List(
       "org.scalaz"      %% "scalaz-scalacheck-binding" % (scalazVersion ++ "-scalacheck-1.13"),
       "org.scalacheck"  %% "scalacheck"                % "1.13.4"
@@ -160,7 +162,7 @@ lazy val tests_scalaz = project.in(file("tests-scalaz"))
   .dependsOn(core_scalaz, laws_scalaz)
   .settings(
     yax(file("yax/tests"), "scalaz"),
-    buildSettings ++ commonSettings,
+    aiyouSettings ++ noPublishSettings,
     libraryDependencies ++= List(
       "org.specs2"  %% "specs2-core"        % specs2Version  % "test",
       "org.specs2"  %% "specs2-scalacheck"  % specs2Version  % "test"
