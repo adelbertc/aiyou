@@ -44,6 +44,16 @@ The modules of **aiyou** are (append `-cats` or `-scalaz` to get the full module
 * `core`: IO related types and classes
 * `laws`: laws for the type classes
 
+```scala
+// Cats
+"io.github.adelbertc" %% "aiyou-core-cats" % "0.1.0-SNAPSHOT"
+"io.github.adelbertc" %% "aiyou-laws-cats" % "0.1.0-SNAPSHOT"
+
+// Scalaz
+"io.github.adelbertc" %% "aiyou-core-scalaz" % "0.1.0-SNAPSHOT"
+"io.github.adelbertc" %% "aiyou-laws-scalaz" % "0.1.0-SNAPSHOT"
+```
+
 ## License
 Code is provided under the MIT license available at https://opensource.org/licenses/MIT,
 as well as in the LICENSE file. The design is informed by many other projects, in particular
